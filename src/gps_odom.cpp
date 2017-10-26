@@ -388,6 +388,31 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
 void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
 {
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week;
+    if(ttime < 0.10)  //if A2D starts publishing blank messages
+    {
+        hasAlreadyReceivedA2D=true;
+        if(hasAlreadyReceivedRTK && validRTKtest)
+        {
+            internalSeq++;
+            geometry_msgs::PoseStamped selfmsg;
+            selfmsg.header.seq=internalSeq;
+            selfmsg.header.stamp=ros::Time(msg->tSolution.secondsOfWeek+
+                        msg->tSolution.fractionOfSecond-msg->deltRSec);
+            /* subtraction is the apparent convention in /Valkyrie/pose*/
+            selfmsg.header.frame_id="fcu";
+            selfmsg.pose.position.x=internalPose(0);
+            selfmsg.pose.position.y=internalPose(1);
+            selfmsg.pose.position.z=internalPose(2);
+            selfmsg.pose.orientation.x=0;
+            selfmsg.pose.orientation.y=0;
+            selfmsg.pose.orientation.z=0;
+            selfmsg.pose.orientation.w=1;
+            internalPosePub_.publish(selfmsg);
+            hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;            
+        }
+    }
+
+    //if everything is working
     if(ttime>lastA2Dtime)  //only use newest time
     {
         hasAlreadyReceivedA2D=true;
