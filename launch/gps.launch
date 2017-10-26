@@ -11,8 +11,20 @@
     <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
     <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
     <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
-    <param name="quadPoseTopic" type="string" value="$(arg model)/pose"/>
+    <param name="quadPoseTopic" type="string" value="$(arg model)/selfpub"/>
     <param name="quadName" type="string" value="$(arg model)"/>
+    <param name="rtktopic" type="string" value="$(arg model)/SingleBaselineRTK"/>
+    <param name="a2dtopic" type="string" value="$(arg model)/Attitude2D"/>
+    <param name="posePubTopic" type="string" value="$(arg model)/selfpub"/>
+
+    <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->
+    <param name="arenaCenterX" value="-742043.55"/> <!--ECEF-->
+    <param name="arenaCenterY" value="-5462198.63"/>
+    <param name="arenaCenterZ" value="3198003.982"/> 
+    <!--set these equal to 0, run gps_kf, monitor output, then set these parameters equal to the errors-->
+    <param name="arenaCenterX_ENU" value="-0.516"/> 
+    <param name="arenaCenterY_ENU" value="-18611.114"/>
+    <param name="arenaCenterZ_ENU" value="6372848.561"/> 
   </node>
 
 </launch>
