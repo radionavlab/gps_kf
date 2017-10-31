@@ -110,6 +110,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   centerInENU.pose.position.x=enuInput(0); //code or read in or whatever
   centerInENU.pose.position.y=enuInput(1);
   centerInENU.pose.position.z=enuInput(2);
+  //ROS_INFO("dENU: %f %f %f",baseENU_vector(0)-enuInput(0),baseENU_vector(1)-enuInput(1),baseENU_vector(2)-enuInput(2));
 
   lastRTKtime=0;
   lastA2Dtime=0;
