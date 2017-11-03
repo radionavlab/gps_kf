@@ -22,9 +22,9 @@
     <param name="arenaCenterY" value="-5462198.63"/>
     <param name="arenaCenterZ" value="3198003.982"/> 
     <!--set these equal to 0, run gps_kf, monitor output, then set these parameters equal to the errors-->
-    <param name="arenaCenterX_ENU" value="-0.516"/> 
-    <param name="arenaCenterY_ENU" value="-18611.114"/>
-    <param name="arenaCenterZ_ENU" value="6372848.561"/> 
+    <param name="arenaCenterX_ENU" value="-0.223"/>  <!-- -0.523-->
+    <param name="arenaCenterY_ENU" value="-0.751"/>  <!-- -0.551-->
+    <param name="arenaCenterZ_ENU" value="5.03"/>   <!--5.720-->
   </node>
 
 </launch>

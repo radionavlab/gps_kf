@@ -70,14 +70,14 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //Get data about node and topic to listen
   std::string quadPoseTopic, quadName, rtktopic, a2dtopic, posePubTopic;
   quadName = ros::this_node::getName();
-  Eigen::Vector3d enuInput;
+//  Eigen::Vector3d enuInput;
   ros::param::get(quadName + "/quadPoseTopic", quadPoseTopic);
   ros::param::get(quadName + "/arenaCenterX", baseECEF_vector(0));
   ros::param::get(quadName + "/arenaCenterY", baseECEF_vector(1));
   ros::param::get(quadName + "/arenaCenterZ", baseECEF_vector(2));
-  ros::param::get(quadName + "/arenaCenterX_ENU", enuInput(0));
-  ros::param::get(quadName + "/arenaCenterY_ENU", enuInput(1));
-  ros::param::get(quadName + "/arenaCenterZ_ENU", enuInput(2));
+  ros::param::get(quadName + "/arenaCenterX_ENU", n_err(0));
+  ros::param::get(quadName + "/arenaCenterY_ENU", n_err(1));
+  ros::param::get(quadName + "/arenaCenterZ_ENU", n_err(2));
   ros::param::get(quadName + "/rtktopic", rtktopic);
   ros::param::get(quadName + "/a2dtopic", a2dtopic);
   ros::param::get(quadName + "/posePubTopic", posePubTopic);
@@ -103,14 +103,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
         baseECEF_vector(1) = msg->ry+msg->ryRov;
         baseECEF_vector(2) = msg->rz+msg->rzRov;*/
   Recef2enu=ecef2enu_rotMatrix(baseECEF_vector);
-  baseENU_vector=Recef2enu*baseECEF_vector;
-  ROS_INFO("baseENU: %f %f %f",baseENU_vector(0),baseENU_vector(1),baseENU_vector(2));
-
-  //to calibrate, set centerInENU.pose=0, watch /Valkyrie/<publishingToSelfTopic>, grab those numbers
-  centerInENU.pose.position.x=enuInput(0); //code or read in or whatever
-  centerInENU.pose.position.y=enuInput(1);
-  centerInENU.pose.position.z=enuInput(2);
-  //ROS_INFO("dENU: %f %f %f",baseENU_vector(0)-enuInput(0),baseENU_vector(1)-enuInput(1),baseENU_vector(2)-enuInput(2));
+  //baseENU_vector=Recef2enu*baseECEF_vector;
 
   lastRTKtime=0;
   lastA2Dtime=0;
@@ -148,6 +141,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 
 void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
+  Eigen::Vector3d zMeas;
   if(kfInit)  //only filter if initPose_ has been set
   {   
       //ROS_INFO("Callback running!");
@@ -274,29 +268,30 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
       //Publish local odometry message
       localOdom_msg = odom_msg;
-      localOdom_msg.pose.pose.position.x = localOdom_msg.pose.pose.position.x - initPose_.pose.position.x;
-      localOdom_msg.pose.pose.position.y = localOdom_msg.pose.pose.position.y - initPose_.pose.position.y;
-      localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z - initPose_.pose.position.z;
+      localOdom_msg.pose.pose.position.x = localOdom_msg.pose.pose.position.x;
+      localOdom_msg.pose.pose.position.y = localOdom_msg.pose.pose.position.y;
+      localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z;
       localOdom_pub_.publish(localOdom_msg);
 
       // Publish message for px4 mocap topic
 
       geometry_msgs::PoseStamped mocap_msg;
-      mocap_msg.pose.position.x = msg->pose.position.x - initPose_.pose.position.x;
-      mocap_msg.pose.position.y = msg->pose.position.y - initPose_.pose.position.y;
-      mocap_msg.pose.position.z = msg->pose.position.z - initPose_.pose.position.z;
+      mocap_msg.pose.position.x = msg->pose.position.x;
+      mocap_msg.pose.position.y = msg->pose.position.y;
+      mocap_msg.pose.position.z = msg->pose.position.z;
       mocap_msg.pose.orientation = msg->pose.orientation;
       mocap_msg.header = msg->header;
       mocap_msg.header.frame_id = "fcu";
       mocap_pub_.publish(mocap_msg);
     }else{
-        /*initPose_.pose.position.x=msg->pose.position.x;  //if initPose_ is a message instead of a msg pointer
+        initPose_.pose.position.x=msg->pose.position.x;
         initPose_.pose.position.y=msg->pose.position.y;
-        initPose_.pose.position.z=msg->pose.position.z;*/
+        initPose_.pose.position.z=msg->pose.position.z;
+        ROS_INFO("initpose: %f %f %f",initPose_.pose.position.x,initPose_.pose.position.y,initPose_.pose.position.z);
 
 //        geometry_msgs::PoseStamped centerInENU;
 //        initPose_.pose = msg->pose;
-        initPose_ = centerInENU;
+//        initPose_ = centerInENU;
         //ROS_INFO("Initial position: %f\t%f\t%f", initPose_.pose.position.x,
         //            initPose_.pose.position.y, initPose_.pose.position.z);
         // Initialize KalmanFilter
@@ -315,6 +310,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         meas_noise_diag = meas_noise_diag.array().square();
         Eigen::Matrix<double, 6, 1> initStates;
         initStates << initPose_.pose.position.x, initPose_.pose.position.y, initPose_.pose.position.z, 0.0, 0.0, 0.0;
+/*        initStates << msg->pose.position.x-initPose_.pose.position.x, msg->pose.position.y-initPose_.pose.position.y, 
+          msg->pose.position.z-initPose_.pose.position.z, 0,0,0; */
         kf_.initialize(initStates, 1.0 * KalmanFilter::ProcessCov_t::Identity(),
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
         kfInit=true;
@@ -346,7 +343,8 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
     //if(baseECEF_vector.squaredNorm() < 0.01)
     //{
     //}
-    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week;
+    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
+        + msg->tSolution.week * sec_in_week -msg->deltRSec;
     if(ttime>lastRTKtime)  //only use newest time
     {
         hasAlreadyReceivedRTK=true;
@@ -358,7 +356,7 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
             tmpvec(0) = msg->rx + msg->rxRov - baseECEF_vector(0); //error vector from ECEF at init time
             tmpvec(1) = msg->ry + msg->ryRov - baseECEF_vector(1);
             tmpvec(2) = msg->rz + msg->rzRov - baseECEF_vector(2);
-            internalPose = baseENU_vector + 0.5*Recef2enu*tmpvec; //rescaling
+            internalPose = 0.5*Recef2enu*tmpvec - n_err; //rescaling
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
         }else{validRTKtest=false;}
 
@@ -368,9 +366,7 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
             internalSeq++;
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
-            selfmsg.header.stamp=ros::Time(msg->tSolution.secondsOfWeek+
-                        msg->tSolution.fractionOfSecond-msg->deltRSec +
-                        msg->tSolution.week * sec_in_week);
+            selfmsg.header.stamp=ros::Time(lastRTKtime);
             /* subtraction is the apparent convention in /Valkyrie/pose*/
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
@@ -382,13 +378,15 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
             selfmsg.pose.orientation.w=internalQuat.w(); //Quaternion(0) is w
             internalPosePub_.publish(selfmsg);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false; //reset to avoid publishing twice
-        }
+        }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
+                        msg->tSolution.week * sec_in_week;}
     }
 }
 
 void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
 {
-    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week;
+    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week
+          - msg->deltRSec;
     if(ttime < 0.10)  //if A2D starts publishing blank messages
     {
         hasAlreadyReceivedA2D=true;
@@ -397,8 +395,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             internalSeq++;
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
-            selfmsg.header.stamp=ros::Time(msg->tSolution.secondsOfWeek+
-                        msg->tSolution.fractionOfSecond-msg->deltRSec);
+            selfmsg.header.stamp=ros::Time(lastRTKtime);
             /* subtraction is the apparent convention in /Valkyrie/pose*/
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
@@ -434,9 +431,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             internalSeq++;
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
-            selfmsg.header.stamp=ros::Time(msg->tSolution.secondsOfWeek +
-                        msg->tSolution.fractionOfSecond-msg->deltRSec +
-                        msg->tSolution.week * sec_in_week);
+            selfmsg.header.stamp=ros::Time(lastRTKtime);
             /* subtraction is the apparent convention in /Valkyrie/pose*/
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
@@ -456,8 +451,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             internalSeq++;
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
-            selfmsg.header.stamp=ros::Time(msg->tSolution.secondsOfWeek+
-                        msg->tSolution.fractionOfSecond-msg->deltRSec);
+            selfmsg.header.stamp=ros::Time(lastRTKtime);
             /* subtraction is the apparent convention in /Valkyrie/pose*/
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);

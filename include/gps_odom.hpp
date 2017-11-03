@@ -43,7 +43,7 @@ class gpsOdom
   geometry_msgs::PoseStamped initPose_;
   geometry_msgs::PoseStamped centerInENU;
   //geometry_msgs::PoseStamped initPose_;
-  Eigen::Vector3d arenaRefCenter, internalPose;
+  Eigen::Vector3d arenaRefCenter, internalPose, n_err;
   Eigen::Quaterniond internalQuat;
   int centerFlag, internalSeq, sec_in_week;
   double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel;
