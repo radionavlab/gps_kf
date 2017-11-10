@@ -123,7 +123,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   // Initialize publishers and subscriber
   odom_pub_ = nh.advertise<nav_msgs::Odometry>(quadName + "/odom", 10);
   localOdom_pub_ = nh.advertise<nav_msgs::Odometry>(quadName + "/local_odom", 10);
-  mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("/mavros/mocap/pose", 10);
+  mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
   gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
   internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
@@ -287,6 +287,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         initPose_.pose.position.x=msg->pose.position.x;
         initPose_.pose.position.y=msg->pose.position.y;
         initPose_.pose.position.z=msg->pose.position.z;
+        ROS_INFO("msg: %f %f %f",msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
         ROS_INFO("initpose: %f %f %f",initPose_.pose.position.x,initPose_.pose.position.y,initPose_.pose.position.z);
 
 //        geometry_msgs::PoseStamped centerInENU;
@@ -378,6 +379,7 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
             selfmsg.pose.orientation.w=internalQuat.w(); //Quaternion(0) is w
             internalPosePub_.publish(selfmsg);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false; //reset to avoid publishing twice
+            //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
         }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
                         msg->tSolution.week * sec_in_week;}
     }
@@ -406,6 +408,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             selfmsg.pose.orientation.z=0;
             selfmsg.pose.orientation.w=1;
             internalPosePub_.publish(selfmsg);
+            //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;            
         }
     }
@@ -442,6 +445,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             selfmsg.pose.orientation.z=internalQuat.z();
             selfmsg.pose.orientation.w=internalQuat.w();
             internalPosePub_.publish(selfmsg);
+            //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
 
         }else if(abs(lastRTKtime-lastA2Dtime)<.001 && validRTKtest && hasAlreadyReceivedRTK
@@ -462,6 +466,7 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
             selfmsg.pose.orientation.z=0;
             selfmsg.pose.orientation.w=1;
             internalPosePub_.publish(selfmsg);
+            //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
         }
 
