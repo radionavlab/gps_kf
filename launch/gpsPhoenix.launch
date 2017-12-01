@@ -7,15 +7,15 @@
   <arg name="output" default="screen"/>
 
   <node pkg="gps_kf" type="gpsKf_node" name="gpsFilter"
-    output="$(arg output)">
+    output="$(arg output)" ns="phoenix">
     <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
     <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
     <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
-    <param name="quadPoseTopic" type="string" value="raw_ENU"/>
+    <param name="quadPoseTopic" type="string" value="selfpub"/>
     <param name="quadName" type="string" value="$(arg model)"/>
-    <param name="rtktopic" type="string" value="phoenix/SingleBaselineRTK"/>
-    <param name="a2dtopic" type="string" value="phoenix/Attitude2D"/>
-    <param name="posePubTopic" type="string" value="raw_ENU"/>
+    <param name="rtktopic" type="string" value="SingleBaselineRTK"/>
+    <param name="a2dtopic" type="string" value="Attitude2D"/>
+    <param name="posePubTopic" type="string" value="selfpub"/>
     <param name="maxThrust" value="16.4808"/>
 
     <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->

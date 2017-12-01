@@ -1,5 +1,5 @@
 #include "filter.h"
-#include <Eigen/LU>  // For matrix inverse
+#include <Eigen/LU>
 
 namespace gps_odom {
 

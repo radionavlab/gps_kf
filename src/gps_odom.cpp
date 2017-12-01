@@ -69,6 +69,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 
   //Get data about node and topic to listen
   std::string quadPoseTopic, quadName, rtktopic, a2dtopic, posePubTopic;
+  double tmax;
   quadName = ros::this_node::getName();
 //  Eigen::Vector3d enuInput;
   ros::param::get(quadName + "/quadPoseTopic", quadPoseTopic);
@@ -82,6 +83,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/a2dtopic", a2dtopic);
   ros::param::get(quadName + "/posePubTopic", posePubTopic);
   ros::param::get(quadName + "/minimumTestStat",minTestStat);
+  ros::param::get(quadName + "/maxThrust",tmax);
+  throttleMax = tmax;
 
   //Get additional parameters for the kalkman filter
   nh.param(quadName + "/max_accel", max_accel, 2.0);
@@ -111,6 +114,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   internalSeq=0;
   sec_in_week = 604800;
   kfInit=false; //KF will need to be initialized
+  throttleSetpoint = 9.81/throttleMax; //the floor is the throttle
+  quaternionSetpoint.x()=0; quaternionSetpoint.y()=0; quaternionSetpoint.z()=0; quaternionSetpoint.w()=1;
 
   //verbose parameters
   ROS_INFO("max_accel: %f", max_accel);
@@ -120,24 +125,56 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ROS_INFO("Node name: %s", quadName.c_str());
   ROS_INFO("gps_fps: %f", gps_fps);
 
-  // Initialize publishers and subscriber
-  odom_pub_ = nh.advertise<nav_msgs::Odometry>(quadName + "/odom", 10);
-  localOdom_pub_ = nh.advertise<nav_msgs::Odometry>(quadName + "/local_odom", 10);
+  // Initialize publishers and subscribers
+  odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 10); //MUST have a node namespace, ns="quadName", in launchfile
+  localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 10);
   mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
   gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
   internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
-  rtkSub_ = nh.subscribe(rtktopic,10,&gpsOdom::singleBaselineRTKCallback,
+  rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
                             this, ros::TransportHints().tcpNoDelay());
-  a2dSub_ = nh.subscribe(a2dtopic,10,&gpsOdom::attitude2DCallback,
+  a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
                             this, ros::TransportHints().tcpNoDelay());
-  ROS_INFO("Kalman Filter Node started! Listening to ROS topic: %s", quadPoseTopic.c_str());
+  ros::Subscriber thrustSub = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
+                            &gpsOdom::throttleCallback,this, ros::TransportHints().tcpNoDelay());
+  ros::Subscriber attSub = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
+                            &gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());  
+  ROS_INFO("Kalman Filter Node started! Listening to ROS input topic: %s within specified namespace", (quadPoseTopic).c_str());
 
   //Get initial pose
   //initPose_ = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(quadPoseTopic);
   //geometry_msgs::PoseStamped initPose_;
 
 }
+
+
+void gpsOdom::throttleCallback(const std_msgs::Float64::ConstPtr &msg)
+{
+  //if on the ground / else if taken off
+  if(xCurr(2)<0.05)
+  {
+    throttleSetpoint = 9.81/throttleMax; //the floor is the throttle
+  }else{
+    throttleSetpoint = throttleMax * msg->data;
+  }
+}
+void gpsOdom::attSetCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
+{
+  if(xCurr(2)<0.05)
+  {
+    quaternionSetpoint.x() = 0;
+    quaternionSetpoint.y() = 0;
+    quaternionSetpoint.z() = 0;
+    quaternionSetpoint.w() = 1;
+  }else{
+    quaternionSetpoint.x() = msg->pose.orientation.x;
+    quaternionSetpoint.y() = msg->pose.orientation.y;
+    quaternionSetpoint.z() = msg->pose.orientation.z;
+    quaternionSetpoint.w() = msg->pose.orientation.w;
+  }
+}
+
 
 void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
@@ -153,19 +190,31 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       double dt = (msg->header.stamp - t_last_proc).toSec();
       t_last_proc = msg->header.stamp;
       static Eigen::Vector3d z_last(0.0, 0.0, 0.0);
+      Eigen::Vector3d uvec=rotMatFromQuat(quaternionSetpoint)*Eigen::Vector3d(0.0,0.0,throttleSetpoint);
 
-      // Kalman filter for getting translational velocity from position measurements
+      //timing
+      static ros::Time t_last_meas = msg->header.stamp; //initialize static variable (basically a scope-limited global)
+      double meas_dt = (msg->header.stamp - t_last_meas).toSec();
+      t_last_meas = msg->header.stamp; //update static variable after being used
+
+      // Kalman filter
       kf_.processUpdate(dt);
+
+      /*
+      kfTW_.processUpdate(dt,uvec);
+      //update kfTW_
+      const KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+      kfTW_.measurementUpdate(measM,meas_dt);
+      Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
+      ROS_INFO("T/W: %f",xTWstate(6));*/
+
+      //extract measurement and calculate residuals to hypothesis test for kf_
       Eigen::Vector3d ECEF;
       ECEF(0) = msg->pose.position.x;
       ECEF(1) = msg->pose.position.y;
       ECEF(2) = msg->pose.position.z;
       const KalmanFilter::Measurement_t meas(msg->pose.position.x, msg->pose.position.y,
                                              msg->pose.position.z);
-
-      static ros::Time t_last_meas = msg->header.stamp; //initialize static variable (basically a scope-limited global)
-      double meas_dt = (msg->header.stamp - t_last_meas).toSec();
-      t_last_meas = msg->header.stamp; //update static variable after being used
       Eigen::Matrix<double,6,1> xbar=kf_.getState();
       Eigen::Vector3d z_expected;  //propagating distance forwards based on estimated speed
       z_expected(0)=z_last(0)+xbar(3)*dt;
@@ -211,15 +260,14 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       /*kf_.measurementUpdate(meas, meas_dt);
       time_of_last_fix=msg->header.stamp;*/
 
-
       //update static variable AFTER using it
       z_last(0)=msg->pose.position.x;
       z_last(1)=msg->pose.position.y;
       z_last(2)=msg->pose.position.z;
 
-
       const KalmanFilter::State_t state = kf_.getState();
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
+      xCurr = kf_.getState();
 
       nav_msgs::Odometry odom_msg, localOdom_msg;
       odom_msg.header = msg->header;
@@ -274,7 +322,6 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       localOdom_pub_.publish(localOdom_msg);
 
       // Publish message for px4 mocap topic
-
       geometry_msgs::PoseStamped mocap_msg;
       mocap_msg.pose.position.x = msg->pose.position.x;
       mocap_msg.pose.position.y = msg->pose.position.y;
@@ -290,11 +337,6 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         ROS_INFO("msg: %f %f %f",msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
         ROS_INFO("initpose: %f %f %f",initPose_.pose.position.x,initPose_.pose.position.y,initPose_.pose.position.z);
 
-//        geometry_msgs::PoseStamped centerInENU;
-//        initPose_.pose = msg->pose;
-//        initPose_ = centerInENU;
-        //ROS_INFO("Initial position: %f\t%f\t%f", initPose_.pose.position.x,
-        //            initPose_.pose.position.y, initPose_.pose.position.z);
         // Initialize KalmanFilter
         KalmanFilter::State_t proc_noise_diag;
         proc_noise_diag(0) = 0.5 * max_accel * dt * dt;
@@ -315,10 +357,25 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           msg->pose.position.z-initPose_.pose.position.z, 0,0,0; */
         kf_.initialize(initStates, 1.0 * KalmanFilter::ProcessCov_t::Identity(),
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
+
+
+        // Initialize Kalman Filter with T/W modification
+        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.05)).asDiagonal();
+        KalmanTW::MeasurementCov_t measNoise = 1e-2 * Eigen::Matrix3d::Identity();
+        KalmanTW::StateCov_t initCov = Eigen::Matrix<double,7,7>::Identity();
+        initCov(6,6)=0.05;
+        KalmanTW::State_t initState;
+        initState << initPose_.pose.position.x, initPose_.pose.position.y, initPose_.pose.position.z, 0.0, 0.0, 0.0, 1.0;
+        kfTW_.initialize(initState,initCov,procNoise,measNoise);
+        Eigen::Matrix<double,7,1> checkvec;
+        checkvec = kfTW_.getState();
+        ROS_INFO("inittest: %f",checkvec(6));
+
+        // do not repeat initialization
         kfInit=true;
     }
-
 }
+
 
 void gpsOdom::PublishTransform(const geometry_msgs::Pose &pose,
                                const std_msgs::Header &header,
@@ -339,7 +396,8 @@ void gpsOdom::PublishTransform(const geometry_msgs::Pose &pose,
   tf_broadcaster_.sendTransform(transform_stamped);
 }
 
-void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::ConstPtr &msg)
+
+void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg)
 {
     //if(baseECEF_vector.squaredNorm() < 0.01)
     //{
@@ -385,7 +443,8 @@ void gpsOdom::singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::
     }
 }
 
-void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
+
+void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg)
 {
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week
           - msg->deltRSec;
@@ -471,6 +530,29 @@ void gpsOdom::attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg)
         }
 
     }
+}
+
+
+Eigen::Matrix3d gpsOdom::rotMatFromEuler(Eigen::Vector3d ee)
+{
+  double phi=ee(0);
+  double theta=ee(1);
+  double psi=ee(2);
+  Eigen::Matrix3d RR;
+  RR<<cos(theta)*cos(psi), cos(theta)*sin(psi), -sin(theta),
+      sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi), sin(theta)*sin(phi)*sin(psi)+cos(phi)*cos(psi), sin(phi)*cos(theta),
+      cos(phi)*sin(theta)*cos(psi)+sin(phi)*sin(psi), cos(phi)*sin(theta)*sin(psi)-sin(phi)*cos(psi), cos(phi)*cos(theta);
+}
+Eigen::Matrix3d gpsOdom::rotMatFromQuat(Eigen::Quaterniond qq)
+{
+  double xx=qq.x();
+  double yy=qq.y();
+  double zz=qq.z();
+  double ww=qq.w();
+  Eigen::Matrix3d RR;
+  RR << 1-2*yy*yy-2*zz*zz, 2*xx*yy+2*ww*zz, 2*xx*zz-2*ww*yy,
+        2*xx*yy-2*ww*zz, 1-2*xx*xx-2*zz*zz, 2*yy*zz+2*ww*xx,
+        2*xx*zz+2*ww*yy, 2*yy*zz-2*ww*xx, 1-2*xx*xx-2*yy*yy;
 }
 
 

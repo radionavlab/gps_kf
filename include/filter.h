@@ -13,6 +13,7 @@ class KalmanFilter {
   typedef Eigen::Matrix<double, n_states, n_states> ProcessCov_t;
   typedef Eigen::Matrix<double, n_meas, 1> Measurement_t;
   typedef Eigen::Matrix<double, n_meas, n_meas> MeasurementCov_t;
+  typedef Eigen::Matrix<double, n_meas, n_meas/2> Bmat_t;
 
   KalmanFilter() {}
   KalmanFilter(const State_t &state, const ProcessCov_t &initial_cov,
@@ -26,7 +27,8 @@ class KalmanFilter {
 
   void processUpdate(double dt);
   void measurementUpdate(const Measurement_t &meas, double dt);
-
+  void setState(const State_t &new_state) {x = new_state;}
+  void setEstimateCovariance(const ProcessCov_t &new_covariance) { P = new_covariance; }
   void setProcessNoise(const ProcessCov_t &process_noise) { Q = process_noise; }
   void setMeasurementNoise(const MeasurementCov_t &meas_noise) {
     R = meas_noise;

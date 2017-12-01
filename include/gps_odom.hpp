@@ -3,14 +3,16 @@
 
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <Eigen/Geometry>
-#include <ppfusion_msgs/Attitude2D.h>
-#include <ppfusion_msgs/SingleBaselineRTK.h>
+#include <gbx_ros_bridge_msgs/SingleBaselineRTK.h>
+#include <gbx_ros_bridge_msgs/Attitude2D.h>
 
 #include "filter.h"
+#include "filterTW.h"
 
 namespace gps_odom
 {
@@ -20,8 +22,12 @@ class gpsOdom
   gpsOdom(ros::NodeHandle &nh);
 
   void gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
-  void singleBaselineRTKCallback(const ppfusion_msgs::SingleBaselineRTK::ConstPtr &msg);
-  void attitude2DCallback(const ppfusion_msgs::Attitude2D::ConstPtr &msg);
+  void singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg);
+  void attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg);
+  void throttleCallback(const std_msgs::Float64::ConstPtr &msg);
+  void attSetCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+  Eigen::Matrix3d rotMatFromEuler(Eigen::Vector3d ee);
+  Eigen::Matrix3d rotMatFromQuat(Eigen::Quaterniond qq);
 
  private:
   void PublishTransform(const geometry_msgs::Pose &pose,
@@ -29,13 +35,15 @@ class gpsOdom
                         const std::string &child_frame_id);
 
   gps_odom::KalmanFilter kf_;
+  gps_odom::KalmanTW kfTW_;
+  KalmanFilter::State_t xCurr;
   ros::Publisher odom_pub_;
   ros::Publisher localOdom_pub_;
   ros::Publisher mocap_pub_;
   ros::Publisher internalPosePub_; //publishes /Valkyrie/pose to itself
   std::string child_frame_id_;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
-  Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef;
+  Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef, arenaRefCenter, internalPose, n_err;
   Eigen::Matrix3d Recef2enu;
   bool publish_tf_;
   ros::Subscriber gps_sub_, rtkSub_, a2dSub_;
@@ -43,10 +51,9 @@ class gpsOdom
   geometry_msgs::PoseStamped initPose_;
   geometry_msgs::PoseStamped centerInENU;
   //geometry_msgs::PoseStamped initPose_;
-  Eigen::Vector3d arenaRefCenter, internalPose, n_err;
-  Eigen::Quaterniond internalQuat;
+  Eigen::Quaterniond internalQuat, quaternionSetpoint;
   int centerFlag, internalSeq, sec_in_week;
-  double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel;
+  double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax;
   bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK;
   double pi;
 
