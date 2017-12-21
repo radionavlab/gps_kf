@@ -83,8 +83,11 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/a2dtopic", a2dtopic);
   ros::param::get(quadName + "/posePubTopic", posePubTopic);
   ros::param::get(quadName + "/minimumTestStat",minTestStat);
-  ros::param::get(quadName + "/maxThrust",tmax);
-  throttleMax = tmax;
+  ros::param::get(quadName + "/maxTW",tmax);
+  ros::param::get(quadName + "/mass",quadMass);
+  throttleMax = tmax*9.81;
+
+  twCounter=0;
 
   //Get additional parameters for the kalkman filter
   nh.param(quadName + "/max_accel", max_accel, 2.0);
@@ -106,6 +109,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
         baseECEF_vector(1) = msg->ry+msg->ryRov;
         baseECEF_vector(2) = msg->rz+msg->rzRov;*/
   Recef2enu=ecef2enu_rotMatrix(baseECEF_vector);
+  //std::cout << Recef2enu << std::endl;
   //baseENU_vector=Recef2enu*baseECEF_vector;
 
   lastRTKtime=0;
@@ -113,6 +117,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //internalQuat.resize(4);
   internalSeq=0;
   sec_in_week = 604800;
+  isArmed=false;
   kfInit=false; //KF will need to be initialized
   throttleSetpoint = 9.81/throttleMax; //the floor is the throttle
   quaternionSetpoint.x()=0; quaternionSetpoint.y()=0; quaternionSetpoint.z()=0; quaternionSetpoint.w()=1;
@@ -136,10 +141,12 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
                             this, ros::TransportHints().tcpNoDelay());
   a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
                             this, ros::TransportHints().tcpNoDelay());
-  ros::Subscriber thrustSub = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
+  thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
                             &gpsOdom::throttleCallback,this, ros::TransportHints().tcpNoDelay());
-  ros::Subscriber attSub = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
-                            &gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());  
+  attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
+                            &gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());
+  joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
+  quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
   ROS_INFO("Kalman Filter Node started! Listening to ROS input topic: %s within specified namespace", (quadPoseTopic).c_str());
 
   //Get initial pose
@@ -199,14 +206,6 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
       // Kalman filter
       kf_.processUpdate(dt);
-
-      /*
-      kfTW_.processUpdate(dt,uvec);
-      //update kfTW_
-      const KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
-      kfTW_.measurementUpdate(measM,meas_dt);
-      Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
-      ROS_INFO("T/W: %f",xTWstate(6));*/
 
       //extract measurement and calculate residuals to hypothesis test for kf_
       Eigen::Vector3d ECEF;
@@ -268,6 +267,37 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       const KalmanFilter::State_t state = kf_.getState();
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
       xCurr = kf_.getState();
+
+      //T/W filter
+      if(state(2)>=initPose_.pose.position.z+0.1 && isArmed)
+      {
+        kfTW_.processUpdate(dt,uvec);
+        Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
+        //ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
+        //update kfTW_
+        const KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+        kfTW_.measurementUpdate(measM,meas_dt);
+        Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
+        //std::cout<<xTWstate(6)<<std::endl;
+
+        twCounter++;
+        twCounter=twCounter%200;
+        twStorage(twCounter)=xTWstate(6)*throttleMax/9.81;  //throttleMax=9.81*tw[0]
+        if(twCounter==0)
+        {
+          double meanTW=twStorage.sum()/200.0;
+          double battstat;
+          battstat = 10.0+90.0/(1.75-1.40)*(meanTW-1.40); //approx battery percent
+          ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
+              //ROS_INFO("service called");
+          px4_control::updatePx4param param_srv;
+          param_srv.request.data.resize(3);
+          param_srv.request.data[0]=quadMass;
+          param_srv.request.data[1]=9.81;
+          param_srv.request.data[2]=meanTW;
+          quadParamService.call(param_srv);
+        }
+      }
 
       nav_msgs::Odometry odom_msg, localOdom_msg;
       odom_msg.header = msg->header;
@@ -360,7 +390,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
 
         // Initialize Kalman Filter with T/W modification
-        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.05)).asDiagonal();
+        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.005)).asDiagonal();
         KalmanTW::MeasurementCov_t measNoise = 1e-2 * Eigen::Matrix3d::Identity();
         KalmanTW::StateCov_t initCov = Eigen::Matrix<double,7,7>::Identity();
         initCov(6,6)=0.05;
@@ -368,8 +398,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         initState << initPose_.pose.position.x, initPose_.pose.position.y, initPose_.pose.position.z, 0.0, 0.0, 0.0, 1.0;
         kfTW_.initialize(initState,initCov,procNoise,measNoise);
         Eigen::Matrix<double,7,1> checkvec;
-        checkvec = kfTW_.getState();
-        ROS_INFO("inittest: %f",checkvec(6));
+        //checkvec = kfTW_.getState();
+        //ROS_INFO("inittest: %f",checkvec(6));
 
         // do not repeat initialization
         kfInit=true;
@@ -532,6 +562,14 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
     }
 }
 
+void gpsOdom::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
+{
+  if(msg->buttons[1]==1 || msg->buttons[2]==1 || msg->buttons[3]==1)
+  {  isArmed=true;}
+  else if(msg->buttons[0]==1)
+  {  isArmed=false;}
+}
+
 
 Eigen::Matrix3d gpsOdom::rotMatFromEuler(Eigen::Vector3d ee)
 {
@@ -542,6 +580,7 @@ Eigen::Matrix3d gpsOdom::rotMatFromEuler(Eigen::Vector3d ee)
   RR<<cos(theta)*cos(psi), cos(theta)*sin(psi), -sin(theta),
       sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi), sin(theta)*sin(phi)*sin(psi)+cos(phi)*cos(psi), sin(phi)*cos(theta),
       cos(phi)*sin(theta)*cos(psi)+sin(phi)*sin(psi), cos(phi)*sin(theta)*sin(psi)-sin(phi)*cos(psi), cos(phi)*cos(theta);
+  return RR;
 }
 Eigen::Matrix3d gpsOdom::rotMatFromQuat(Eigen::Quaterniond qq)
 {
@@ -550,9 +589,13 @@ Eigen::Matrix3d gpsOdom::rotMatFromQuat(Eigen::Quaterniond qq)
   double zz=qq.z();
   double ww=qq.w();
   Eigen::Matrix3d RR;
-  RR << 1-2*yy*yy-2*zz*zz, 2*xx*yy+2*ww*zz, 2*xx*zz-2*ww*yy,
+  /*RR << 1-2*yy*yy-2*zz*zz, 2*xx*yy+2*ww*zz, 2*xx*zz-2*ww*yy,
         2*xx*yy-2*ww*zz, 1-2*xx*xx-2*zz*zz, 2*yy*zz+2*ww*xx,
-        2*xx*zz+2*ww*yy, 2*yy*zz-2*ww*xx, 1-2*xx*xx-2*yy*yy;
+        2*xx*zz+2*ww*yy, 2*yy*zz-2*ww*xx, 1-2*xx*xx-2*yy*yy; // the transposed derp*/
+  RR << 1-2*yy*yy-2*zz*zz, 2*xx*yy-2*ww*zz, 2*xx*zz+2*ww*yy,
+        2*xx*yy+2*ww*zz, 1-2*xx*xx-2*zz*zz, 2*yy*zz-2*ww*xx,
+        2*xx*zz-2*ww*yy, 2*yy*zz+2*ww*xx, 1-2*xx*xx-2*yy*yy;
+  return RR;
 }
 
 

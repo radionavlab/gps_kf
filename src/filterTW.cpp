@@ -24,6 +24,7 @@ void KalmanTW::processUpdate(double dt, Eigen::Vector3d uT) {
   //B*u*tw% is the effect of tw% on x(0-5) so should be the rightmost column of A(7x7)
   State_t A_rightCol = B*uT;
   A.rightCols(1) = A_rightCol;
+  A(6,6)=1;
   //noise matrix
   Gamma_t gamma = Gamma_t::Zero();
   gamma.topLeftCorner(3,3)=dt*dt*0.5*Eigen::Matrix3d::Identity();
@@ -31,7 +32,7 @@ void KalmanTW::processUpdate(double dt, Eigen::Vector3d uT) {
   gamma(6,3)=1;
 
   //propagation
-  x = A * x - B * Eigen::Vector3d(0,0,-9.81);
+  x = A * x + B * Eigen::Vector3d(0,0,-9.81);
   P = A * P * A.transpose() + gamma*Q*gamma.transpose();
 }
 

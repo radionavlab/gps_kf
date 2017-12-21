@@ -16,16 +16,17 @@
     <param name="rtktopic" type="string" value="SingleBaselineRTK"/>
     <param name="a2dtopic" type="string" value="Attitude2D"/>
     <param name="posePubTopic" type="string" value="selfpub"/>
-    <param name="maxThrust" value="16.4808"/>
+    <param name="maxTW" value="1.7"/>
+    <param name="mass" value="0.762"/>
 
     <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->
     <param name="arenaCenterX" value="-742043.55"/> <!--ECEF-->
     <param name="arenaCenterY" value="-5462198.63"/>
     <param name="arenaCenterZ" value="3198003.982"/> 
     <!--set these equal to 0, run gps_kf, monitor output, then set these parameters equal to the errors-->
-    <param name="arenaCenterX_ENU" value="-0.548"/>  <!-- -0.553-->
-    <param name="arenaCenterY_ENU" value="-0.568"/>  <!-- -0.538-->
-    <param name="arenaCenterZ_ENU" value="5.701"/>   <!--5.720-->
+    <param name="arenaCenterX_ENU" value="-0.303"/>  <!-- -0.553-->
+    <param name="arenaCenterY_ENU" value="-0.345"/>  <!-- -0.538-->
+    <param name="arenaCenterZ_ENU" value="5.730"/>   <!--5.720-->
   </node>
 
 </launch>

@@ -7,10 +7,11 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Joy.h>
 #include <Eigen/Geometry>
 #include <gbx_ros_bridge_msgs/SingleBaselineRTK.h>
 #include <gbx_ros_bridge_msgs/Attitude2D.h>
-
+#include <px4_control/updatePx4param.h>
 #include "filter.h"
 #include "filterTW.h"
 
@@ -26,6 +27,7 @@ class gpsOdom
   void attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg);
   void throttleCallback(const std_msgs::Float64::ConstPtr &msg);
   void attSetCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+  void joyCallback(const sensor_msgs::Joy::ConstPtr &msg);
   Eigen::Matrix3d rotMatFromEuler(Eigen::Vector3d ee);
   Eigen::Matrix3d rotMatFromQuat(Eigen::Quaterniond qq);
 
@@ -46,16 +48,19 @@ class gpsOdom
   Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef, arenaRefCenter, internalPose, n_err;
   Eigen::Matrix3d Recef2enu;
   bool publish_tf_;
-  ros::Subscriber gps_sub_, rtkSub_, a2dSub_;
+  ros::Subscriber gps_sub_, rtkSub_, a2dSub_, joy_sub_, attSub_, thrustSub_;
   //geometry_msgs::PoseStamped::ConstPtr initPose_;
   geometry_msgs::PoseStamped initPose_;
   geometry_msgs::PoseStamped centerInENU;
   //geometry_msgs::PoseStamped initPose_;
   Eigen::Quaterniond internalQuat, quaternionSetpoint;
   int centerFlag, internalSeq, sec_in_week;
-  double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax;
-  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK;
+  double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax, quadMass;
+  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed;
   double pi;
+  Eigen::Matrix<double,200,1> twStorage;
+  int twCounter;
+  ros::ServiceClient quadParamService; 
 
 };
 
