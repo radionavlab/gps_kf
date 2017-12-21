@@ -269,7 +269,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       xCurr = kf_.getState();
 
       //T/W filter
-      if(state(2)>=initPose_.pose.position.z+0.1 && isArmed)
+      if(state(2)>=0.10 && isArmed)
       {
         kfTW_.processUpdate(dt,uvec);
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
