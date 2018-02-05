@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   cmake_modules
   gbx_ros_bridge_msgs
+  px4_control
 )
 
 find_package(Eigen REQUIRED)
