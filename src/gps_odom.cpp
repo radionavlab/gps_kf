@@ -477,6 +477,12 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
         }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
                         msg->tSolution.week * sec_in_week;}
     }
+
+    //do not duplicate publish
+    if(onlyPublishPos)
+    {
+      hasAlreadyReceivedRTK=false;
+    }
 }
 
 
