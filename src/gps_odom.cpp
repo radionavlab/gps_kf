@@ -85,6 +85,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/minimumTestStat",minTestStat);
   ros::param::get(quadName + "/maxTW",tmax);
   ros::param::get(quadName + "/mass",quadMass);
+  ros::param::get(quadName + "/alwaysPublishWithoutAttitude",onlyPublishPos);
   throttleMax = tmax*9.81;
 
   twCounter=0;
@@ -432,6 +433,11 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
     //if(baseECEF_vector.squaredNorm() < 0.01)
     //{
     //}
+    if(onlyPublishPos)
+    {
+      validA2Dtest=true;
+    }
+
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
         + msg->tSolution.week * sec_in_week -msg->deltRSec;
     if(ttime>lastRTKtime)  //only use newest time

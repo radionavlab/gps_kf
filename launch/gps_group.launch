@@ -27,6 +27,9 @@
     <param name="arenaCenterX_ENU" value="-0.548"/>  <!-- -0.553-->
     <param name="arenaCenterY_ENU" value="-0.568"/>  <!-- -0.538-->
     <param name="arenaCenterZ_ENU" value="5.701"/>   <!--5.720-->
+
+    <!--if true, always publish position immediately and ignore attitude-->
+    <param name="alwaysPublishWithoutAttitude" type="bool" value="true"/>
   </node>
 
 </launch>

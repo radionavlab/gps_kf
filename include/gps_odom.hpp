@@ -57,7 +57,7 @@ class gpsOdom
   Eigen::Quaterniond internalQuat, quaternionSetpoint;
   int centerFlag, internalSeq, sec_in_week;
   double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax, quadMass;
-  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed;
+  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed, onlyPublishPos;
   double pi;
   Eigen::Matrix<double,200,1> twStorage;
   int twCounter;
