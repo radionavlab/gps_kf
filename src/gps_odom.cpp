@@ -68,7 +68,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 {
 
   //Get data about node and topic to listen
-  std::string quadPoseTopic, quadName, rtktopic, a2dtopic, posePubTopic;
+  std::string quadPoseTopic, rtktopic, a2dtopic, posePubTopic;
   double tmax;
   quadName = ros::this_node::getName();
 //  Eigen::Vector3d enuInput;
@@ -133,7 +133,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   // Initialize publishers and subscribers
   odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 10); //MUST have a node namespace, ns="quadName", in launchfile
   localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 10);
-  mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
+  // mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
   gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
   internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
@@ -351,15 +351,15 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z;
       localOdom_pub_.publish(localOdom_msg);
 
-      // Publish message for px4 mocap topic
-      geometry_msgs::PoseStamped mocap_msg;
-      mocap_msg.pose.position.x = msg->pose.position.x;
-      mocap_msg.pose.position.y = msg->pose.position.y;
-      mocap_msg.pose.position.z = msg->pose.position.z;
-      mocap_msg.pose.orientation = msg->pose.orientation;
-      mocap_msg.header = msg->header;
-      mocap_msg.header.frame_id = "fcu";
-      mocap_pub_.publish(mocap_msg);
+      // // Publish message for px4 mocap topic
+      // geometry_msgs::PoseStamped mocap_msg;
+      // mocap_msg.pose.position.x = msg->pose.position.x;
+      // mocap_msg.pose.position.y = msg->pose.position.y;
+      // mocap_msg.pose.position.z = msg->pose.position.z;
+      // mocap_msg.pose.orientation = msg->pose.orientation;
+      // mocap_msg.header = msg->header;
+      // mocap_msg.header.frame_id = "refnet_enu";
+      // mocap_pub_.publish(mocap_msg);
     }else{
         initPose_.pose.position.x=msg->pose.position.x;
         initPose_.pose.position.y=msg->pose.position.y;
@@ -457,7 +457,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
             /* subtraction is the apparent convention in /Valkyrie/pose*/
-            selfmsg.header.frame_id="fcu";
+            selfmsg.header.frame_id="refnet_enu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
             selfmsg.pose.position.z=internalPose(2);

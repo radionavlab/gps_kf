@@ -44,6 +44,7 @@ class gpsOdom
   ros::Publisher mocap_pub_;
   ros::Publisher internalPosePub_; //publishes /Valkyrie/pose to itself
   std::string child_frame_id_;
+  std::string quadName;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
   Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef, arenaRefCenter, internalPose, n_err;
   Eigen::Matrix3d Recef2enu;
