@@ -291,6 +291,11 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           battstat = 10.0+90.0/(1.75-1.40)*(meanTW-1.40); //approx battery percent
           ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
               //ROS_INFO("service called");
+
+          //Saturate meanTW
+          if(meanTW>1.75){meanTW=1.75;}else if(meanTW<1.3){meanTW=1.3;}
+
+          //Call service
           px4_control::updatePx4param param_srv;
           param_srv.request.data.resize(3);
           param_srv.request.data[0]=quadMass;
