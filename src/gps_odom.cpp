@@ -210,6 +210,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
       xCurr = kf_.getState();
 
+      /*
       //T/W filter
       if(state(2)>=0.05 && isArmed)
       {
@@ -244,7 +245,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           param_srv.request.data[2]=meanTW;
           quadParamService.call(param_srv);
         }
-      }
+      }*/
 
       nav_msgs::Odometry odom_msg, localOdom_msg;
       odom_msg.header = msg->header;
@@ -293,9 +294,9 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
       //Publish local odometry message
       localOdom_msg = odom_msg;
-      localOdom_msg.pose.pose.position.x = localOdom_msg.pose.pose.position.x;
+      /*localOdom_msg.pose.pose.position.x = localOdom_msg.pose.pose.position.x;
       localOdom_msg.pose.pose.position.y = localOdom_msg.pose.pose.position.y;
-      localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z;
+      localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z;*/
       localOdom_pub_.publish(localOdom_msg);
 
       // // Publish message for px4 mocap topic
