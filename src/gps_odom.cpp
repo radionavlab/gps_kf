@@ -285,19 +285,19 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
       odom_pub_.publish(odom_msg);
 
-/*      //Publish tf  
-      if(publish_tf_)
-      {
-        PublishTransform(odom_msg.pose.pose, odom_msg.header,
-                         child_frame_id_);
-      }
+      // //Publish tf  
+      // if(publish_tf_)
+      // {
+      //   PublishTransform(odom_msg.pose.pose, odom_msg.header,
+      //                    child_frame_id_);
+      // }
 
       //Publish local odometry message
       localOdom_msg = odom_msg;
       localOdom_msg.pose.pose.position.x = localOdom_msg.pose.pose.position.x;
       localOdom_msg.pose.pose.position.y = localOdom_msg.pose.pose.position.y;
       localOdom_msg.pose.pose.position.z = localOdom_msg.pose.pose.position.z;
-      localOdom_pub_.publish(localOdom_msg);*/
+      localOdom_pub_.publish(localOdom_msg);
 
       // // Publish message for px4 mocap topic
       // geometry_msgs::PoseStamped mocap_msg;
