@@ -27,7 +27,6 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/minimumTestStat",minTestStat);
   ros::param::get(quadName + "/maxTW",tmax);
   ros::param::get(quadName + "/mass",quadMass);
-  ros::param::get(quadName + "/alwaysPublishWithoutAttitude",onlyPublishPos);
   throttleMax = tmax*9.81;
 
   twCounter=0;
@@ -212,7 +211,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       xCurr = kf_.getState();
 
       //T/W filter
-      if(state(2)>=0.10 && isArmed)
+      if(state(2)>=0.05 && isArmed)
       {
         kfTW_.processUpdate(dt,uvec);
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
@@ -247,7 +246,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         }
       }
 
-      nav_msgs::Odometry odom_msg;
+      nav_msgs::Odometry odom_msg, localOdom_msg;
       odom_msg.header = msg->header;
       odom_msg.child_frame_id = msg->header.frame_id;
       // odom_msg.child_frame_id = "quadFrame";

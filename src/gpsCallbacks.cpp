@@ -12,10 +12,6 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
     //if(baseECEF_vector.squaredNorm() < 0.01)
     //{
     //}
-    if(onlyPublishPos)
-    {
-      validA2Dtest=true;
-    }
 
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
         + msg->tSolution.week * sec_in_week -msg->deltRSec;
@@ -55,12 +51,6 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
         }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
                         msg->tSolution.week * sec_in_week;}
-    }
-
-    //do not duplicate publish
-    if(onlyPublishPos)
-    {
-      hasAlreadyReceivedRTK=false;
     }
 }
 
@@ -106,7 +96,16 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
                 * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
                 * Eigen::AngleAxisd(pi/2-msg->azAngle, Eigen::Vector3d::UnitZ());
 
-        }else{validA2Dtest=false;}
+        }else if(!validA2Dtest)
+        {
+            //If the previous A2D was also bad, then play a sound and declare this one bad.
+            validA2Dtest=false;
+            std::cout << '\a';
+        }else
+        {
+            validA2Dtest=false;
+        }
+
 
         if(abs(lastRTKtime-lastA2Dtime)<.001 && validA2Dtest && validRTKtest
                 && hasAlreadyReceivedRTK && hasAlreadyReceivedA2D)  //only resend pose if new
@@ -133,10 +132,11 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
                 this behavior later*/
         {
             internalSeq++;
-            geometry_msgs::PoseStamped selfmsg;
+            //Uncomment to publish message with 0 yaw
+            /*geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
-            /* subtraction is the apparent convention in /Valkyrie/pose*/
+            //subtraction is the apparent convention in /Valkyrie/pose
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
@@ -147,6 +147,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             selfmsg.pose.orientation.w=1;
             internalPosePub_.publish(selfmsg);
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
+            */
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
         }
 
