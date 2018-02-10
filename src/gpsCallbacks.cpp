@@ -30,6 +30,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
         }else{validRTKtest=false;}
 
+        //If the time is new, both messages for this time have been received, and teststats are good
         if(abs(lastRTKtime-lastA2Dtime)<.001 && validA2Dtest && validRTKtest
                 && hasAlreadyReceivedRTK && hasAlreadyReceivedA2D)  //only resend pose if new
         {
@@ -37,7 +38,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
-            /* subtraction is the apparent convention in /Valkyrie/pose*/
+            //Subtraction is the apparent convention in /Valkyrie/pose
             selfmsg.header.frame_id="refnet_enu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
@@ -59,7 +60,8 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
 {
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week
           - msg->deltRSec;
-    if(ttime < 0.10)  //if A2D starts publishing blank messages
+    /*
+    if(ttime < 0.10)  //if A2D starts publishing blank messages, publish 0 yaw
     {
         hasAlreadyReceivedA2D=true;
         if(hasAlreadyReceivedRTK && validRTKtest)
@@ -68,7 +70,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
-            /* subtraction is the apparent convention in /Valkyrie/pose*/
+            // subtraction is the apparent convention in /Valkyrie/pose
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
@@ -81,10 +83,10 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;            
         }
-    }
+    }*/
 
     //if everything is working
-    if(ttime>lastA2Dtime)  //only use newest time
+    if(ttime>lastA2Dtime)  //Only use newest time. Ignore 0 messages.
     {
         hasAlreadyReceivedA2D=true;
         lastA2Dtime=ttime;
@@ -106,7 +108,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             validA2Dtest=false;
         }
 
-
+        //If the message is new, both messages have been received, and all teststats are good, then publish.
         if(abs(lastRTKtime-lastA2Dtime)<.001 && validA2Dtest && validRTKtest
                 && hasAlreadyReceivedRTK && hasAlreadyReceivedA2D)  //only resend pose if new
         {
@@ -114,7 +116,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             geometry_msgs::PoseStamped selfmsg;
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
-            /* subtraction is the apparent convention in /Valkyrie/pose*/
+            //Subtraction is the apparent convention in /Valkyrie/pose
             selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
@@ -125,8 +127,8 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             selfmsg.pose.orientation.w=internalQuat.w();
             internalPosePub_.publish(selfmsg);
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
+            //Reset for next message
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
-
         }else if(abs(lastRTKtime-lastA2Dtime)<.001 && validRTKtest && hasAlreadyReceivedRTK
                 && hasAlreadyReceivedA2D) /*if A2D stops publishing, go for pose anyways. May change
                 this behavior later*/

@@ -13,6 +13,7 @@
 #include <gbx_ros_bridge_msgs/Attitude2D.h>
 #include "px4_control/updatePx4param.h" 
 #include "filter.h"
+#include <geometry_msgs/TransformStamped.h>
 #include "filterTW.h"
 #include "transformations.hpp"
 
@@ -24,6 +25,7 @@ class gpsOdom
   gpsOdom(ros::NodeHandle &nh);
 
   void gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
+  //void gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg);
   void singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg);
   void attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg);
   void throttleCallback(const std_msgs::Float64::ConstPtr &msg);

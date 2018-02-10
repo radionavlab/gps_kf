@@ -376,14 +376,9 @@ void gpsOdom::PublishTransform(const geometry_msgs::Pose &pose,
 void gpsOdom::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
 {
   if(msg->buttons[1]==1 || msg->buttons[2]==1 || msg->buttons[3]==1)
-  {
-    isArmed=true;
-  }
+  {  isArmed=true;}
   else if(msg->buttons[0]==1)
-  {
-    isArmed=false;
-  }
-  
+  {  isArmed=false;}
 }
 
 } //end namespace
