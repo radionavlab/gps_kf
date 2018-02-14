@@ -27,5 +27,7 @@
     <param name="arenaCenterX_ENU" value="-0.303"/>  <!-- -0.553-->
     <param name="arenaCenterY_ENU" value="-0.345"/>  <!-- -0.538-->
     <param name="arenaCenterZ_ENU" value="5.730"/>   <!--5.720-->
+
+    <param name="run_TW" type="bool" value="true"/>
   </node>
 </launch>

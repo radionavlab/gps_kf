@@ -16,6 +16,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include "filterTW.h"
 #include "transformations.hpp"
+#include <gps_kf/twUpdate.h>
 
 namespace gps_odom
 {
@@ -46,6 +47,7 @@ class gpsOdom
   ros::Publisher localOdom_pub_;
   ros::Publisher mocap_pub_;
   ros::Publisher internalPosePub_; //publishes /Valkyrie/pose to itself
+  ros::Publisher twPub_;
   std::string child_frame_id_;
   std::string quadName;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
@@ -60,7 +62,7 @@ class gpsOdom
   Eigen::Quaterniond internalQuat, quaternionSetpoint;
   int centerFlag, internalSeq, sec_in_week;
   double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax, quadMass;
-  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed;
+  bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed, runTW;
   double pi;
   Eigen::Matrix<double,200,1> twStorage;
   int twCounter;

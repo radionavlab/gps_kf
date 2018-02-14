@@ -12,10 +12,21 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen REQUIRED)
 
-catkin_package(
-    INCLUDE_DIRS include
-    CATKIN_DEPENDS gbx_ros_bridge_msgs
-    DEPENDS Eigen
+#catkin_package(
+#    INCLUDE_DIRS include
+#    CATKIN_DEPENDS gbx_ros_bridge_msgs
+#    DEPENDS Eigen
+#)
+
+add_message_files(
+  FILES
+  twUpdate.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
 )
 
 include_directories(
@@ -23,6 +34,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
 )
+
+catkin_package(
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs
+    DEPENDS Eigen)
 
 add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp)
 add_dependencies(gpsKf_node gbx_ros_bridge_msgs_gencpp)

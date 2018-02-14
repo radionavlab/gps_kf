@@ -29,6 +29,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/minimumTestStat",minTestStat);
   ros::param::get(quadName + "/maxTW",tmax);
   ros::param::get(quadName + "/mass",quadMass);
+  ros::param::get(quadName + "/run_TW",runTW);
   throttleMax = tmax*9.81;
 
   twCounter=0;
@@ -81,6 +82,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
   internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+  twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
   rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
                             this, ros::TransportHints().tcpNoDelay());
   a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
@@ -214,7 +216,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       xCurr = kf_.getState();
 
       //T/W filter
-      if(state(2)>=0.05 && isArmed)
+      if(state(2)>=0.10 && isArmed && runTW)
       {
         kfTW_.processUpdate(dt,uvec);
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
@@ -246,6 +248,13 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           param_srv.request.data[1]=9.81;
           param_srv.request.data[2]=meanTW;
           quadParamService.call(param_srv);
+
+          //Publish TW to TW topic.  NOTE: This does not update TW on the quad. The
+          //purpose of this publisher is to produce a value that can be observed in
+          //a rosbag as rosbags do not record service calls.
+          gps_kf::twUpdate tw_msg;
+          tw_msg.rosTime = t_last_meas.toSec();
+          tw_msg.estimatedTW = meanTW;
         }
       }
 

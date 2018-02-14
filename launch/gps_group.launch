@@ -29,7 +29,7 @@
     <param name="arenaCenterZ_ENU" value="5.701"/>   <!--5.720-->
 
     <!--if true, always publish position immediately and ignore attitude-->
-    <param name="alwaysPublishWithoutAttitude" type="bool" value="true"/>
+    <param name="run_TW" type="bool" value="true"/>
   </node>
 
 </launch>
