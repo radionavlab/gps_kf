@@ -188,7 +188,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       //replace residCost with dz_hyp_test when full covariance solution is available
       double residCost=resid.transpose()*(meas_covmat+HH*proc_noise_cov*HH.transpose())*resid; //unused until full covariance is available
 
-      //Hypothesis test
+      /*//Hypothesis test
       if (dz_hyp_test <= hypothesis_test_threshold)
       {
         kf_.measurementUpdate(meas, meas_dt);
@@ -202,9 +202,9 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       else if (msg->header.seq>1) //bypass first step
       {
         ROS_INFO("Outlier of value %f rejected at seq %d", dz_hyp_test,msg->header.seq);
-      }
-      /*kf_.measurementUpdate(meas, meas_dt);
-      time_of_last_fix=msg->header.stamp;*/
+      }*/
+      kf_.measurementUpdate(meas, meas_dt);
+      time_of_last_fix=msg->header.stamp;
 
       //update static variable AFTER using it
       z_last(0)=msg->pose.position.x;
@@ -255,6 +255,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           gps_kf::twUpdate tw_msg;
           tw_msg.rosTime = t_last_meas.toSec();
           tw_msg.estimatedTW = meanTW;
+          twPub_.publish(tw_msg);
         }
       }
 
