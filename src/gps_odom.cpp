@@ -57,6 +57,13 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //std::cout << Recef2enu << std::endl;
   //baseENU_vector=Recef2enu*baseECEF_vector;
 
+  //Account for WRW not being perfectly aligned in ENU
+  double thetaWRW;
+  thetaWRW = 6.2*pi/180; //angle of rooftop coordinate system WRT ENU
+  Rwrw << cos(thetaWRW), -1*sin(thetaWRW), 0,
+          sin(thetaWRW), cos(thetaWRW), 0,
+          0, 0, 1;
+
   lastRTKtime=0;
   lastA2Dtime=0;
   //internalQuat.resize(4);
@@ -158,7 +165,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       ECEF(0) = msg->pose.position.x;
       ECEF(1) = msg->pose.position.y;
       ECEF(2) = msg->pose.position.z;
-      const KalmanFilter::Measurement_t meas(msg->pose.position.x, msg->pose.position.y,
+      KalmanFilter::Measurement_t meas(msg->pose.position.x, msg->pose.position.y,
                                              msg->pose.position.z);
       Eigen::Matrix<double,6,1> xbar=kf_.getState();
       Eigen::Vector3d z_expected;  //propagating distance forwards based on estimated speed
@@ -177,6 +184,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       HH(0, 0) = 1;
       HH(1, 1) = 1;
       HH(2, 2) = 1;
+      meas = Rwrw*meas;
       Eigen::Vector3d resid = meas - HH*xbar;
       Eigen::Matrix<double,3,3> meas_covmat; //placeholder until I can get the full covariance solution
       meas_covmat.setZero();
@@ -210,6 +218,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       z_last(0)=msg->pose.position.x;
       z_last(1)=msg->pose.position.y;
       z_last(2)=msg->pose.position.z;
+      z_last=Rwrw*z_last;
 
       const KalmanFilter::State_t state = kf_.getState();
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
@@ -222,7 +231,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
         //ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
         //update kfTW_
-        const KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+        KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+        measM = Rwrw*measM;
         kfTW_.measurementUpdate(measM,meas_dt);
         Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
         //std::cout<<xTWstate(6)<<std::endl;

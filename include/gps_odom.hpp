@@ -67,6 +67,7 @@ class gpsOdom
   Eigen::Matrix<double,200,1> twStorage;
   int twCounter;
   ros::ServiceClient quadParamService; 
+  Eigen::Matrix<double,3,3> Rwrw;
 
 };
 
