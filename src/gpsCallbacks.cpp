@@ -93,10 +93,19 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
         if(msg->testStat > minTestStat)
         {
             validA2Dtest=true;
-            //attitude vec is Euler=[0,0, pi/2-azAngle]
+            //attitude vec is Euler=[0,0, pi/2-azAngle-thetaWRW]
             internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
                 * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
-                * Eigen::AngleAxisd(pi/2-msg->azAngle, Eigen::Vector3d::UnitZ());
+                * Eigen::AngleAxisd(pi/2-msg->azAngle-6.2*pi/180, Eigen::Vector3d::UnitZ());
+            //Check for sign flops in quaternion
+            if(internalQuat.z()*internalQuatPrev.z()<0 && internalQuat.w()*internalQuatPrev.w()<0)
+            {
+                internalQuat.x()=-1*internalQuat.x();
+                internalQuat.y()=-1*internalQuat.y();
+                internalQuat.z()=-1*internalQuat.z();
+                internalQuat.w()=-1*internalQuat.w();
+            }
+            internalQuatPrev=internalQuat;
 
         }else if(!validA2Dtest)
         {

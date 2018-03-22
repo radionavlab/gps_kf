@@ -59,7 +59,7 @@ class gpsOdom
   geometry_msgs::PoseStamped initPose_;
   geometry_msgs::PoseStamped centerInENU;
   //geometry_msgs::PoseStamped initPose_;
-  Eigen::Quaterniond internalQuat, quaternionSetpoint;
+  Eigen::Quaterniond internalQuat, quaternionSetpoint, internalQuatPrev;
   int centerFlag, internalSeq, sec_in_week;
   double lastRTKtime, lastA2Dtime, minTestStat, dt, max_accel, throttleSetpoint, throttleMax, quadMass;
   bool validRTKtest, validA2Dtest, kfInit, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK, isArmed, runTW;
