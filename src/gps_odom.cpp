@@ -73,6 +73,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   kfInit=false; //KF will need to be initialized
   throttleSetpoint = 9.81/throttleMax; //the floor is the throttle
   quaternionSetpoint.x()=0; quaternionSetpoint.y()=0; quaternionSetpoint.z()=0; quaternionSetpoint.w()=1;
+  internalQuatPrev.x()=0; internalQuatPrev.y()=0; internalQuatPrev.z()=0; internalQuatPrev.w()=1;
 
   //verbose parameters
   ROS_INFO("max_accel: %f", max_accel);
@@ -141,12 +142,9 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
   Eigen::Vector3d zMeas;
   if(kfInit)  //only filter if initPose_ has been set
   {   
-      //ROS_INFO("Callback running!");
       static ros::Time t_last_proc = msg->header.stamp;
-      //static int counter=0;
       static ros::Time time_of_last_fix=msg->header.stamp;
       double lastKnownSpeed=0;
-      //counter++;
       double dt = (msg->header.stamp - t_last_proc).toSec();
       t_last_proc = msg->header.stamp;
       static Eigen::Vector3d z_last(0.0, 0.0, 0.0);
@@ -326,10 +324,12 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       mocap_msg.header = msg->header;
       mocap_msg.header.frame_id = "refnet_enu";
       mocap_pub_.publish(mocap_msg);
-    }else{
-        initPose_.pose.position.x=msg->pose.position.x;
-        initPose_.pose.position.y=msg->pose.position.y;
-        initPose_.pose.position.z=msg->pose.position.z;
+    }else{  //run intitialization
+        Eigen::Vector3d p0(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
+        p0=Rwrw*p0;
+        initPose_.pose.position.x=p0(0);
+        initPose_.pose.position.y=p0(1);
+        initPose_.pose.position.z=p0(2);
         //ROS_INFO("msg: %f %f %f",msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
         ROS_INFO("initpose: %f %f %f",initPose_.pose.position.x,initPose_.pose.position.y,initPose_.pose.position.z);
 
