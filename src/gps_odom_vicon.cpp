@@ -1,4 +1,4 @@
-//FOR USE WITH VICON ONLY
+//FOR USE WITH GPS ONLY
 
 #include <Eigen/Geometry>
 #include "gps_odom.hpp"
@@ -57,6 +57,13 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //std::cout << Recef2enu << std::endl;
   //baseENU_vector=Recef2enu*baseECEF_vector;
 
+  //Account for WRW not being perfectly aligned in ENU
+  double thetaWRW;
+  thetaWRW = 0; //angle of rooftop coordinate system WRT ENU
+  Rwrw << cos(thetaWRW), -1*sin(thetaWRW), 0,
+          sin(thetaWRW), cos(thetaWRW), 0,
+          0, 0, 1;
+
   lastRTKtime=0;
   lastA2Dtime=0;
   //internalQuat.resize(4);
@@ -66,6 +73,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   kfInit=false; //KF will need to be initialized
   throttleSetpoint = 9.81/throttleMax; //the floor is the throttle
   quaternionSetpoint.x()=0; quaternionSetpoint.y()=0; quaternionSetpoint.z()=0; quaternionSetpoint.w()=1;
+  internalQuatPrev.x()=0; internalQuatPrev.y()=0; internalQuatPrev.z()=0; internalQuatPrev.w()=1;
 
   //verbose parameters
   ROS_INFO("max_accel: %f", max_accel);
@@ -82,6 +90,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
   internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+  twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
   rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
                             this, ros::TransportHints().tcpNoDelay());
   a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
@@ -133,12 +142,9 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
   Eigen::Vector3d zMeas;
   if(kfInit)  //only filter if initPose_ has been set
   {   
-      //ROS_INFO("Callback running!");
       static ros::Time t_last_proc = msg->header.stamp;
-      //static int counter=0;
       static ros::Time time_of_last_fix=msg->header.stamp;
       double lastKnownSpeed=0;
-      //counter++;
       double dt = (msg->header.stamp - t_last_proc).toSec();
       t_last_proc = msg->header.stamp;
       static Eigen::Vector3d z_last(0.0, 0.0, 0.0);
@@ -157,7 +163,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
       ECEF(0) = msg->transform.translation.x;
       ECEF(1) = msg->transform.translation.y;
       ECEF(2) = msg->transform.translation.z;
-      const KalmanFilter::Measurement_t meas(msg->transform.translation.x, msg->transform.translation.y,
+      KalmanFilter::Measurement_t meas(msg->transform.translation.x, msg->transform.translation.y,
                                              msg->transform.translation.z);
       Eigen::Matrix<double,6,1> xbar=kf_.getState();
       Eigen::Vector3d z_expected;  //propagating distance forwards based on estimated speed
@@ -176,6 +182,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
       HH(0, 0) = 1;
       HH(1, 1) = 1;
       HH(2, 2) = 1;
+      meas = Rwrw*meas;
       Eigen::Vector3d resid = meas - HH*xbar;
       Eigen::Matrix<double,3,3> meas_covmat; //placeholder until I can get the full covariance solution
       meas_covmat.setZero();
@@ -187,7 +194,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
       //replace residCost with dz_hyp_test when full covariance solution is available
       double residCost=resid.transpose()*(meas_covmat+HH*proc_noise_cov*HH.transpose())*resid; //unused until full covariance is available
 
-      //Hypothesis test
+      /*//Hypothesis test
       if (dz_hyp_test <= hypothesis_test_threshold)
       {
         kf_.measurementUpdate(meas, meas_dt);
@@ -201,38 +208,40 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
       else if (msg->header.seq>1) //bypass first step
       {
         ROS_INFO("Outlier of value %f rejected at seq %d", dz_hyp_test,msg->header.seq);
-      }
-      /*kf_.measurementUpdate(meas, meas_dt);
-      time_of_last_fix=msg->header.stamp;*/
+      }*/
+      kf_.measurementUpdate(meas, meas_dt);
+      time_of_last_fix=msg->header.stamp;
 
       //update static variable AFTER using it
       z_last(0)=msg->transform.translation.x;
       z_last(1)=msg->transform.translation.y;
       z_last(2)=msg->transform.translation.z;
+      z_last=Rwrw*z_last;
 
       const KalmanFilter::State_t state = kf_.getState();
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
       xCurr = kf_.getState();
 
-      
       //T/W filter
-      if(state(2)>=0.15 && isArmed && runTW)
+      if(state(2)>=0.10 && isArmed && runTW)
       {
         kfTW_.processUpdate(dt,uvec);
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
         //ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
         //update kfTW_
-        const KalmanTW::Measurement_t measM(msg->transform.translation.x, msg->transform.translation.y, msg->transform.translation.z);
+        KalmanTW::Measurement_t measM(msg->transform.translation.x, msg->transform.translation.y,
+                                             msg->transform.translation.z);
+        measM = Rwrw*measM;
         kfTW_.measurementUpdate(measM,meas_dt);
         Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
         //std::cout<<xTWstate(6)<<std::endl;
 
         twCounter++;
-        twCounter=twCounter%600;
+        twCounter=twCounter%200;
         twStorage(twCounter)=xTWstate(6)*throttleMax/9.81;  //throttleMax=9.81*tw[0]
         if(twCounter==0)
         {
-          double meanTW=twStorage.sum()/600.0;
+          double meanTW=twStorage.sum()/200.0;
           double battstat;
           battstat = 10.0+90.0/(1.75-1.40)*(meanTW-1.40); //approx battery percent
           ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
@@ -255,13 +264,16 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
           gps_kf::twUpdate tw_msg;
           tw_msg.rosTime = t_last_meas.toSec();
           tw_msg.estimatedTW = meanTW;
+          twPub_.publish(tw_msg);
         }
       }
+
 
       nav_msgs::Odometry localOdom_msg;
       localOdom_msg.header = msg->header;
       localOdom_msg.child_frame_id = msg->header.frame_id;
-      // localOdom_msg.child_frame_id = "quadFrame";
+      localOdom_msg.header.frame_id = "world";
+      localOdom_msg.child_frame_id = "world";
       localOdom_msg.pose.pose.position.x = state(0);
       localOdom_msg.pose.pose.position.y = state(1);
       localOdom_msg.pose.pose.position.z = state(2);
@@ -312,13 +324,16 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
       mocap_msg.pose.position.z = msg->transform.translation.z;
       mocap_msg.pose.orientation = msg->transform.rotation;
       mocap_msg.header = msg->header;
-      mocap_msg.header.frame_id = "refnet_enu";
+      //mocap_msg.header.frame_id = "refnet_enu";
+      mocap_msg.header.frame_id = "fcu";
       mocap_pub_.publish(mocap_msg);
-    }else{
-        initPose_.pose.position.x=msg->transform.translation.x;
-        initPose_.pose.position.y=msg->transform.translation.y;
-        initPose_.pose.position.z=msg->transform.translation.z;
-        //ROS_INFO("msg: %f %f %f",msg->transform.translation.x, msg->transform.translation.y, msg->transform.translation.z);
+    }else{  //run intitialization
+        Eigen::Vector3d p0(msg->transform.translation.x,msg->transform.translation.y,msg->transform.translation.z);
+        p0=Rwrw*p0;
+        initPose_.pose.position.x=p0(0);
+        initPose_.pose.position.y=p0(1);
+        initPose_.pose.position.z=p0(2);
+        //ROS_INFO("msg: %f %f %f",msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
         ROS_INFO("initpose: %f %f %f",initPose_.pose.position.x,initPose_.pose.position.y,initPose_.pose.position.z);
 
         // Initialize KalmanFilter
@@ -337,8 +352,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
         meas_noise_diag = meas_noise_diag.array().square();
         Eigen::Matrix<double, 6, 1> initStates;
         initStates << initPose_.pose.position.x, initPose_.pose.position.y, initPose_.pose.position.z, 0.0, 0.0, 0.0;
-/*        initStates << msg->transform.translation.x-initPose_.pose.position.x, msg->transform.translation.y-initPose_.pose.position.y, 
-          msg->transform.translation.z-initPose_.pose.position.z, 0,0,0; */
+/*        initStates << msg->pose.position.x-initPose_.pose.position.x, msg->pose.position.y-initPose_.pose.position.y, 
+          msg->pose.position.z-initPose_.pose.position.z, 0,0,0; */
         kf_.initialize(initStates, 1.0 * KalmanFilter::ProcessCov_t::Identity(),
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
 
@@ -384,9 +399,14 @@ void gpsOdom::PublishTransform(const geometry_msgs::Pose &pose,
 void gpsOdom::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
 {
   if(msg->buttons[1]==1 || msg->buttons[2]==1 || msg->buttons[3]==1)
-  {  isArmed=true;}
+  {
+    isArmed=true;
+  }
   else if(msg->buttons[0]==1)
-  {  isArmed=false;}
+  {
+    isArmed=false;
+  }
+  
 }
 
 } //end namespace
