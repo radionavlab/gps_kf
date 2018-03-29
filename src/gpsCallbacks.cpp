@@ -27,6 +27,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             tmpvec(1) = msg->ry + msg->ryRov - baseECEF_vector(1);
             tmpvec(2) = msg->rz + msg->rzRov - baseECEF_vector(2);
             internalPose = 0.5*Recef2enu*tmpvec - n_err; //rescaling
+            //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
         }else{validRTKtest=false;}
 
