@@ -270,8 +270,9 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 
       nav_msgs::Odometry localOdom_msg;
       localOdom_msg.header = msg->header;
-      localOdom_msg.child_frame_id = msg->header.frame_id;
-      // localOdom_msg.child_frame_id = "quadFrame";
+//      localOdom_msg.child_frame_id = msg->header.frame_id;
+      localOdom_msg.header.frame_id = "world";
+      localOdom_msg.child_frame_id = "world";
       localOdom_msg.pose.pose.position.x = state(0);
       localOdom_msg.pose.pose.position.y = state(1);
       localOdom_msg.pose.pose.position.z = state(2);
@@ -322,7 +323,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       mocap_msg.pose.position.z = msg->pose.position.z;
       mocap_msg.pose.orientation = msg->pose.orientation;
       mocap_msg.header = msg->header;
-      mocap_msg.header.frame_id = "refnet_enu";
+      //mocap_msg.header.frame_id = "refnet_enu";
+      mocap_msg.header.frame_id = "fcu";
       mocap_pub_.publish(mocap_msg);
     }else{  //run intitialization
         Eigen::Vector3d p0(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
@@ -354,9 +356,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         kf_.initialize(initStates, 1.0 * KalmanFilter::ProcessCov_t::Identity(),
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
 
-
         // Initialize Kalman Filter with T/W modification
-        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.005)).asDiagonal();
+        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.00001)).asDiagonal();
         KalmanTW::MeasurementCov_t measNoise = 1e-2 * Eigen::Matrix3d::Identity();
         KalmanTW::StateCov_t initCov = Eigen::Matrix<double,7,7>::Identity();
         initCov(6,6)=0.05;

@@ -7,11 +7,11 @@
   <arg name="output" default="screen"/>
 
   <node pkg="gps_kf" type="gpsKf_node" name="gpsFilter"
-    output="$(arg output)" ns="gryphon">
+    output="$(arg output)" ns="phoenix">
     <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
     <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
     <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
-    <param name="quadPoseTopic" type="string" value="/vicon/gryphon/gryphon"/>
+    <param name="quadPoseTopic" type="string" value="/vicon/phoenix/phoenix"/>
     <param name="quadName" type="string" value="$(arg model)"/>
     <param name="rtktopic" type="string" value="SingleBaselineRTK"/>
     <param name="a2dtopic" type="string" value="Attitude2D"/>

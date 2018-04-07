@@ -27,6 +27,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             tmpvec(1) = msg->ry + msg->ryRov - baseECEF_vector(1);
             tmpvec(2) = msg->rz + msg->rzRov - baseECEF_vector(2);
             internalPose = 0.5*Recef2enu*tmpvec - n_err; //rescaling
+            //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
         }else{validRTKtest=false;}
 
@@ -39,7 +40,8 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
             //Subtraction is the apparent convention in /Valkyrie/pose
-            selfmsg.header.frame_id="refnet_enu";
+            selfmsg.header.frame_id="wrw0";
+            //selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
             selfmsg.pose.position.z=internalPose(2);
@@ -92,11 +94,14 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
         lastA2Dtime=ttime;
         if(msg->testStat > minTestStat)
         {
+            double thetaWRWLim;
             validA2Dtest=true;
-            //attitude vec is Euler=[0,0, pi/2-azAngle-thetaWRW]
+            //attitude vec is Euler=[0,0, pi/2-azAngle (+-) thetaWRW]
+            //thetaWRWLim=pi/180*6.2;
+            thetaWRWLim=0;
             internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
                 * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
-                * Eigen::AngleAxisd(pi/2-msg->azAngle-6.2*pi/180, Eigen::Vector3d::UnitZ());
+                * Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ());
             //Check for sign flops in quaternion
             if(internalQuat.z()*internalQuatPrev.z()<0 && internalQuat.w()*internalQuatPrev.w()<0)
             {
@@ -126,7 +131,8 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             selfmsg.header.seq=internalSeq;
             selfmsg.header.stamp=ros::Time(lastRTKtime);
             //Subtraction is the apparent convention in /Valkyrie/pose
-            selfmsg.header.frame_id="fcu";
+            selfmsg.header.frame_id="wrw0";
+            //selfmsg.header.frame_id="fcu";
             selfmsg.pose.position.x=internalPose(0);
             selfmsg.pose.position.y=internalPose(1);
             selfmsg.pose.position.z=internalPose(2);
