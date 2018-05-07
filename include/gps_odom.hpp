@@ -52,8 +52,8 @@ class gpsOdom
   std::string child_frame_id_;
   std::string quadName;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
-  Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef, arenaRefCenter, internalPose, n_err;
-  Eigen::Matrix3d Recef2enu;
+  Eigen::Vector3d baseECEF_vector, baseENU_vector, WRW0_ecef, arenaRefCenter, internalPose, n_err, L_cg2p;
+  Eigen::Matrix3d Recef2enu, RBI;
   bool publish_tf_;
   ros::Subscriber gps_sub_, rtkSub_, a2dSub_, joy_sub_, attSub_, thrustSub_;
   //geometry_msgs::PoseStamped::ConstPtr initPose_;

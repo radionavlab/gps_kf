@@ -64,7 +64,10 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   thetaWRW = 6.2*pi/180; //angle of rooftop coordinate system WRT ENU
   Rwrw << cos(thetaWRW), -1*sin(thetaWRW), 0,
           sin(thetaWRW), cos(thetaWRW), 0,
-          0, 0, 1;
+          0, 0, 1.0;
+  RBI << 1.0, 0.0, 0.0,
+         0.0, 1.0, 0.0,
+         0.0, 0.0, 1.0;
 
   lastRTKtime=0;
   lastA2Dtime=0;
@@ -93,6 +96,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //Vicon or GPS
   if(useVicon)
   {
+    //NOTE: THE NEW VICON POSE TOPIC MUST BE ASSIGNED IN THE LAUNCH FILE VIA GLOBAL REFERENCE
     gps_sub_ = nh.subscribe(quadPoseTopic,10,&gpsOdom::viconCallback,
                             this, ros::TransportHints().tcpNoDelay());
   }else
@@ -114,6 +118,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
   joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
   quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
+
+  L_cg2p<< 0.1013,-0.0004,0.0472;
   
   ROS_INFO("Kalman Filter Node started! Listening to ROS input topic: %s within specified namespace", (quadPoseTopic).c_str());
 
