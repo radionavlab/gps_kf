@@ -16,6 +16,7 @@
     <param name="rtktopic" type="string" value="phoenix/SingleBaselineRTK"/>
     <param name="a2dtopic" type="string" value="phoenix/Attitude2D"/>
     <param name="posePubTopic" type="string" value="raw_ENU"/>
+    <param name="useViconInsteadOfGps" type="bool" value="false"/>
     <param name="maxThrust" value="16.4808"/>
 
     <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->

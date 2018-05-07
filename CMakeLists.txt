@@ -40,7 +40,7 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs
     DEPENDS Eigen)
 
-add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp)
+add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp)
 add_dependencies(gpsKf_node gbx_ros_bridge_msgs_gencpp)
 add_dependencies(gpsKf_node gbx_ros_bridge_msgs)
 target_link_libraries(gpsKf_node ${catkin_LIBRARIES})

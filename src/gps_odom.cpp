@@ -16,6 +16,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   double tmax;
   quadName = ros::this_node::getName();
 //  Eigen::Vector3d enuInput;
+  bool useVicon=false;
   ros::param::get(quadName + "/quadPoseTopic", quadPoseTopic);
   ros::param::get(quadName + "/arenaCenterX", baseECEF_vector(0));
   ros::param::get(quadName + "/arenaCenterY", baseECEF_vector(1));
@@ -30,6 +31,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/maxTW",tmax);
   ros::param::get(quadName + "/mass",quadMass);
   ros::param::get(quadName + "/run_TW",runTW);
+  ros::param::get(quadName + "/useViconInsteadOfGps",useVicon);
   throttleMax = tmax*9.81;
 
   twCounter=0;
@@ -87,20 +89,32 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 10); //MUST have a node namespace, ns="quadName", in launchfile
   localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 10);
   mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
-  gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
+  
+  //Vicon or GPS
+  if(useVicon)
+  {
+    gps_sub_ = nh.subscribe(quadPoseTopic,10,&gpsOdom::viconCallback,
                             this, ros::TransportHints().tcpNoDelay());
-  internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
-  twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
-  rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
+  }else
+  {
+    gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
                             this, ros::TransportHints().tcpNoDelay());
-  a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+    internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+    rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
                             this, ros::TransportHints().tcpNoDelay());
+    a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+                            this, ros::TransportHints().tcpNoDelay());
+  }
+
+  //T/W filter terms
   thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
                             &gpsOdom::throttleCallback,this, ros::TransportHints().tcpNoDelay());
   attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
                             &gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());
+  twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
   joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
   quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
+  
   ROS_INFO("Kalman Filter Node started! Listening to ROS input topic: %s within specified namespace", (quadPoseTopic).c_str());
 
   //Get initial pose
@@ -243,11 +257,11 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           double meanTW=twStorage.sum()/200.0;
           double battstat;
           battstat = 10.0+90.0/(1.75-1.40)*(meanTW-1.40); //approx battery percent
-          ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
-              //ROS_INFO("service called");
 
           //Saturate meanTW
-          if(meanTW>1.75){meanTW=1.75;}else if(meanTW<1.3){meanTW=1.3;}
+          if(meanTW>1.8){meanTW=1.8;}else if(meanTW<1.3){meanTW=1.3;}
+          ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
+              //ROS_INFO("service called");
 
           //Call service
           px4_control::updatePx4param param_srv;
@@ -357,7 +371,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
 
         // Initialize Kalman Filter with T/W modification
-        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.00001)).asDiagonal();
+        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.000003)).asDiagonal();
         KalmanTW::MeasurementCov_t measNoise = 1e-2 * Eigen::Matrix3d::Identity();
         KalmanTW::StateCov_t initCov = Eigen::Matrix<double,7,7>::Identity();
         initCov(6,6)=0.05;

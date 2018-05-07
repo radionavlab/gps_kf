@@ -16,6 +16,7 @@
     <param name="rtktopic" type="string" value="SingleBaselineRTK"/>
     <param name="a2dtopic" type="string" value="Attitude2D"/>
     <param name="posePubTopic" type="string" value="selfpub"/>
+    <param name="useViconInsteadOfGps" type="bool" value="false"/>
     <param name="maxTW" value="1.7"/>
     <param name="mass" value="0.762"/>
 
