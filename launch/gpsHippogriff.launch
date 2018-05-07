@@ -7,7 +7,7 @@
   <arg name="output" default="screen"/>
 
   <node pkg="gps_kf" type="gpsKf_node" name="gpsFilter"
-    output="$(arg output)" ns="griffin">
+    output="$(arg output)" ns="gryphon">
     <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
     <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
     <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
