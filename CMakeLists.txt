@@ -11,18 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen REQUIRED)
 
-#catkin_package(
-#    INCLUDE_DIRS include
-#    CATKIN_DEPENDS gbx_ros_bridge_msgs
-#    DEPENDS Eigen
-#)
-
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-)
-
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}

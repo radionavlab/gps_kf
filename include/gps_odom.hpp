@@ -13,7 +13,6 @@
 #include <gbx_ros_bridge_msgs/Attitude2D.h>
 #include "filter.h"
 #include <geometry_msgs/TransformStamped.h>
-#include "filterTW.h"
 #include "transformations.hpp"
 #include <gps_kf/twUpdate.h>
 
