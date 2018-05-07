@@ -7,7 +7,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   cmake_modules
   gbx_ros_bridge_msgs
-  px4_control
 )
 
 find_package(Eigen REQUIRED)
@@ -17,11 +16,6 @@ find_package(Eigen REQUIRED)
 #    CATKIN_DEPENDS gbx_ros_bridge_msgs
 #    DEPENDS Eigen
 #)
-
-add_message_files(
-  FILES
-  twUpdate.msg
-)
 
 generate_messages(
   DEPENDENCIES

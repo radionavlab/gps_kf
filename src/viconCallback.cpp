@@ -87,51 +87,6 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
       const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
       xCurr = kf_.getState();
 
-      //T/W filter
-      if(state(2)>=0.10 && isArmed && runTW)
-      {
-        kfTW_.processUpdate(dt,uvec);
-        Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
-        //ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
-        //update kfTW_
-        KalmanTW::Measurement_t measM(msg->transform.translation.x, msg->transform.translation.y,
-                                             msg->transform.translation.z);
-        measM = Rwrw*measM;
-        kfTW_.measurementUpdate(measM,meas_dt);
-        Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
-        //std::cout<<xTWstate(6)<<std::endl;
-
-        twCounter++;
-        twCounter=twCounter%200;
-        twStorage(twCounter)=xTWstate(6)*throttleMax/9.81;  //throttleMax=9.81*tw[0]
-        if(twCounter==0)
-        {
-          double meanTW=twStorage.sum()/200.0;
-          double battstat;
-          battstat = 10.0+90.0/(1.80-1.40)*(meanTW-1.40); //approx battery percent
-          //Saturate meanTW
-          if(meanTW>1.8){meanTW=1.8;}else if(meanTW<1.3){meanTW=1.3;}
-          ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
-              //ROS_INFO("service called");          
-
-          //Call service
-          px4_control::updatePx4param param_srv;
-          param_srv.request.data.resize(3);
-          param_srv.request.data[0]=quadMass;
-          param_srv.request.data[1]=9.81;
-          param_srv.request.data[2]=meanTW;
-          quadParamService.call(param_srv);
-
-          //Publish TW to TW topic.  NOTE: This does not update TW on the quad. The
-          //purpose of this publisher is to produce a value that can be observed in
-          //a rosbag as rosbags do not record service calls.
-          gps_kf::twUpdate tw_msg;
-          tw_msg.rosTime = t_last_meas.toSec();
-          tw_msg.estimatedTW = meanTW;
-          twPub_.publish(tw_msg);
-        }
-      }
-
 
       nav_msgs::Odometry localOdom_msg;
       localOdom_msg.header = msg->header;
@@ -221,18 +176,6 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
         kf_.initialize(initStates, 1.0 * KalmanFilter::ProcessCov_t::Identity(),
                     proc_noise_diag.asDiagonal(), meas_noise_diag.asDiagonal());
 
-
-        // Initialize Kalman Filter with T/W modification
-        KalmanTW::ProcessCov_t procNoise = (Eigen::Matrix<double,4,1>(0.5,0.5,0.5,0.000003)).asDiagonal();
-        KalmanTW::MeasurementCov_t measNoise = 1e-2 * Eigen::Matrix3d::Identity();
-        KalmanTW::StateCov_t initCov = Eigen::Matrix<double,7,7>::Identity();
-        initCov(6,6)=0.05;
-        KalmanTW::State_t initState;
-        initState << initPose_.pose.position.x, initPose_.pose.position.y, initPose_.pose.position.z, 0.0, 0.0, 0.0, 1.0;
-        kfTW_.initialize(initState,initCov,procNoise,measNoise);
-        Eigen::Matrix<double,7,1> checkvec;
-        //checkvec = kfTW_.getState();
-        //ROS_INFO("inittest: %f",checkvec(6));
 
         // do not repeat initialization
         kfInit=true;
