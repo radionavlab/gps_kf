@@ -43,5 +43,6 @@ catkin_package(
 add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp)
 add_dependencies(gpsKf_node gbx_ros_bridge_msgs_gencpp)
 add_dependencies(gpsKf_node gbx_ros_bridge_msgs)
+add_dependencies(gpsKf_node gps_kf_generate_messages_cpp)
 target_link_libraries(gpsKf_node ${catkin_LIBRARIES})
 
