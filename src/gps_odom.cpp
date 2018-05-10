@@ -16,7 +16,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   double tmax;
   quadName = ros::this_node::getName();
 //  Eigen::Vector3d enuInput;
-  bool useVicon=false;
+  bool useVicon=false; //temporary var
+  runTW=true; //globally used var
   ros::param::get(quadName + "/quadPoseTopic", quadPoseTopic);
   ros::param::get(quadName + "/arenaCenterX", baseECEF_vector(0));
   ros::param::get(quadName + "/arenaCenterY", baseECEF_vector(1));
@@ -270,6 +271,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
               //ROS_INFO("service called");
 
           //Call service
+          if(runTW)
+          {
           px4_control::updatePx4param param_srv;
           param_srv.request.data.resize(3);
           param_srv.request.data[0]=quadMass;
@@ -284,6 +287,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           tw_msg.rosTime = t_last_meas.toSec();
           tw_msg.estimatedTW = meanTW;
           twPub_.publish(tw_msg);
+          }
         }
       }
 
