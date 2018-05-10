@@ -14,7 +14,7 @@
 #include "filter.h"
 #include <geometry_msgs/TransformStamped.h>
 #include "transformations.hpp"
-#include <gps_kf/twUpdate.h>
+#include "filterTW.h"
 
 namespace gps_odom
 {
