@@ -22,7 +22,7 @@
             <param name="useViconInsteadOfGps" type="bool" value="false"/>
             <param name="maxTW" value="1.7"/>
             <param name="mass" value="0.762"/>
-            <param name="run_TW" type="bool" value="true" />
+            <param name="run_TW" type="bool" value="false" />
   
             <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->
             <param name="arenaCenterX" value="-742043.55"/> <!--ECEF-->

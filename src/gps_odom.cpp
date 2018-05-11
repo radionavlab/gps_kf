@@ -244,7 +244,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
       xCurr = kf_.getState();
 
       //T/W filter
-      if(state(2)>=0.10 && isArmed && runTW)
+      if(state(2)>=0.10 && isArmed)
       {
         kfTW_.processUpdate(dt,uvec);
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
@@ -279,7 +279,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           param_srv.request.data[1]=9.81;
           param_srv.request.data[2]=meanTW;
           quadParamService.call(param_srv);
-
+          }
+    
           //Publish TW to TW topic.  NOTE: This does not update TW on the quad. The
           //purpose of this publisher is to produce a value that can be observed in
           //a rosbag as rosbags do not record service calls.
@@ -287,7 +288,7 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
           tw_msg.rosTime = t_last_meas.toSec();
           tw_msg.estimatedTW = meanTW;
           twPub_.publish(tw_msg);
-          }
+          
         }
       }
 
