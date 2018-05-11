@@ -104,9 +104,9 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             //attitude vec is Euler=[0,0, pi/2-azAngle (+-) thetaWRW]
             thetaWRWLim=pi/180*6.2;
             //thetaWRWLim=0;
-            internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
-                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY())
-                * Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ());
+            internalQuat = /*Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX()) */
+                Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ())
+                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY());
             //Check for sign flops in quaternion
             if(internalQuat.z()*internalQuatPrev.z()<0 && internalQuat.w()*internalQuatPrev.w()<0)
             {
