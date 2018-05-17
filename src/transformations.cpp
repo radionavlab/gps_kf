@@ -64,14 +64,3 @@ Eigen::Vector3d ecef2enu(Eigen::Vector3d ECEF){
     return ENU;  /*tfw someone else forgot the return and I thought it was my code in error.
             I TRUSTED YOU. YOU HAVE BETRAYED ME. I REALLY SHOULD GET SOME SLEEP.*/
 }
-
-void quaternionConstraint(Eigen::Quaterniond &q)
-{
-    const double qL = sqrt(q.x()*q.x() + q.y()*q.y() + q.z()*q.z() + q.w()*q.w());
-    q.x() = q.x()/qL;
-    q.y() = q.y()/qL;
-    q.z() = q.z()/qL:
-    q.w() = q.w()/qL:
-
-    return; 
-}

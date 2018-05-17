@@ -3,6 +3,5 @@
 
 Eigen::Matrix3d ecef2enu_rotMatrix(Eigen::Vector3d ECEF);
 Eigen::Vector3d ecef2enu(Eigen::Vector3d ECEF);
-void quaternionConstraint(Eigen::Quaterniond &q);
 
 #endif // GPS_ODOM_TRANSFORM_HPP_

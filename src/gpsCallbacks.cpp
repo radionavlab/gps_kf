@@ -108,7 +108,6 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
                 * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY())
                 * Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ());
-
 //            internalQuat = Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ())
 //                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY());
 
