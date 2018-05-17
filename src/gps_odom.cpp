@@ -109,6 +109,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
                             this, ros::TransportHints().tcpNoDelay());
     a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
                             this, ros::TransportHints().tcpNoDelay());
+    timerPub_ = nh.createTimer(ros::Duration(1.0/40.0), gpsOdom::timerCallback);
   }
 
   //T/W filter terms
@@ -128,6 +129,75 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   //initPose_ = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(quadPoseTopic);
   //geometry_msgs::PoseStamped initPose_;
 
+}
+
+void gpsOdom::timerCallback(const ros::TimerEvent&)
+{
+  if(kfInit)
+  {
+    KalmanFilter::State_t state = kf_.getState();
+    ros::Time thisTime = ros::Time::now();
+    const double dtRosTime = thisTime.toSec() - lastRosTime.toSec();
+
+    //constant velocity model
+    Eigen::Matrix<double,6,6> Amat=Eigen::Matrix<double,6,6>::Identity();
+    Amat.topRightCorner(3,3) = dtRosTime*Eigen::Matrix3d::Identity();
+    state = Amat*state;
+
+    //Publish the odom message
+    nav_msgs::Odometry localOdom_msg;
+    localOdom_msg.header.stamp = thisTime;
+    localOdom_msg.header.frame_id = "world";
+    localOdom_msg.child_frame_id = "world";
+    localOdom_msg.pose.pose.position.x = state(0);
+    localOdom_msg.pose.pose.position.y = state(1);
+    localOdom_msg.pose.pose.position.z = state(2);
+    localOdom_msg.twist.twist.linear.x = state(3);
+    localOdom_msg.twist.twist.linear.y = state(4);
+    localOdom_msg.twist.twist.linear.z = state(5);
+    const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
+    for(int i = 0; i < 3; i++)
+    {
+      for(int j = 0; j < 3; j++)
+      {
+        localOdom_msg.pose.covariance[6 * i + j] = proc_noise(i, j);
+        localOdom_msg.twist.covariance[6 * i + j] = proc_noise(3 + i, 3 + j);
+      }
+    }
+
+    // Single step differentitation for angular velocity
+    Eigen::Matrix3d R = rotMatFromQuat(EinternalQuat);
+    if(dt > 1e-6)
+    {
+      const Eigen::Matrix3d R_dot = (R - Rclass) / dt;
+      const Eigen::Matrix3d w_hat = R_dot * R.transpose();
+
+      localOdom_msg.twist.twist.angular.x = w_hat(2, 1);
+      localOdom_msg.twist.twist.angular.y = w_hat(0, 2);
+      localOdom_msg.twist.twist.angular.z = w_hat(1, 0);
+    }
+
+    //propagate internal quat
+    Eigen::Quaterniond dQ;
+    dQ.x() = 0.5*dtRosTime*w_hat(0);
+    dQ.y() = 0.5*dtRosTime*w_hat(1);
+    dQ.z() = 0.5*dtRosTime*w_hat(2);
+    dQ.w() = 1.0;
+    dQ.normalize();
+    //quaternionConstraint(dQ);
+    internalQuat = dQ*internalQuat;
+    internalQuat.normalize();
+
+    localOdom_msg.pose.pose.orientation.x = internalQuat.x();
+    localOdom_msg.pose.pose.orientation.y = internalQuat.y();
+    localOdom_msg.pose.pose.orientation.z = internalQuat.z();
+    localOdom_msg.pose.pose.orientation.w = internalQuat.w();
+
+    localOdom_pub_.publish(localOdom_msg);
+
+    lastRosTime=thisTime;
+  }
+  return;
 }
 
 
@@ -328,7 +398,8 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         localOdom_msg.twist.twist.angular.y = w_hat(0, 2);
         localOdom_msg.twist.twist.angular.z = w_hat(1, 0);
       }
-      R_prev = R;
+      R_prev = R; //R_prev is used internally in measurement proc step
+      Rclass = R; //R_class is used with the timer
 
       //odom_pub_.publish(localOdom_msg);
       // //Publish tf  
@@ -396,6 +467,10 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
         // do not repeat initialization
         kfInit=true;
     }
+
+  //lastRosTime is the ROS timestamp corresponding to the last time published  
+  lastRosTime = ros::time::now();
+  return;
 }
 
 /*

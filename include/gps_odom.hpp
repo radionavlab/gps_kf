@@ -35,6 +35,7 @@ class gpsOdom
   void viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg);
   Eigen::Matrix3d rotMatFromEuler(Eigen::Vector3d ee);
   Eigen::Matrix3d rotMatFromQuat(Eigen::Quaterniond qq);
+  void timerCallback(const ros::TimerEvent&);
 
  private:
   void PublishTransform(const geometry_msgs::Pose &pose,
@@ -56,6 +57,8 @@ class gpsOdom
   Eigen::Matrix3d Recef2enu, RBI;
   bool publish_tf_;
   ros::Subscriber gps_sub_, rtkSub_, a2dSub_, joy_sub_, attSub_, thrustSub_;
+  ros::Timer timerPub_;
+  ros::Time lastRosTime;
   //geometry_msgs::PoseStamped::ConstPtr initPose_;
   geometry_msgs::PoseStamped initPose_;
   geometry_msgs::PoseStamped centerInENU;
@@ -68,7 +71,7 @@ class gpsOdom
   Eigen::Matrix<double,200,1> twStorage;
   int twCounter;
   ros::ServiceClient quadParamService; 
-  Eigen::Matrix<double,3,3> Rwrw;
+  Eigen::Matrix3d Rwrw, Rclass;
 
 };
 
