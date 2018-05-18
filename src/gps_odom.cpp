@@ -33,6 +33,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ros::param::get(quadName + "/mass",quadMass);
   ros::param::get(quadName + "/run_TW",runTW);
   ros::param::get(quadName + "/useViconInsteadOfGps",useVicon);
+  ros::param::get(quadName + "/pubRate",pubRate);
   throttleMax = tmax*9.81;
 
   twCounter=0;
@@ -109,9 +110,12 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 							this, ros::TransportHints().tcpNoDelay());
 	a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
 							this, ros::TransportHints().tcpNoDelay());
-	bool oneshot = false;
-	timerPub_ = nh.createTimer(ros::Duration(1.0/40.0), &gpsOdom::timerCallback, this, oneshot);
+	if(pubRate > 1e-6)
+	{
+		bool oneshot = false;
+		timerPub_ = nh.createTimer(ros::Duration(1.0/pubRate), &gpsOdom::timerCallback, this, oneshot);
 //    timerPub_ = nh.createTimer(ros::Duration(1.0/40.0), &gpsOdom::timerCallback, this, bool oneshot = false); //correct declaration per docs
+	}
   }
 
   //T/W filter terms
@@ -198,7 +202,20 @@ void gpsOdom::timerCallback(const ros::TimerEvent &event)
 
 	localOdom_pub_.publish(localOdom_msg);
 
+    // Publish message for px4 mocap topic
+    geometry_msgs::PoseStamped mocap_msg;
+    mocap_msg.pose.position.x = state(0);
+    mocap_msg.pose.position.y = state(1);
+    mocap_msg.pose.position.z = state(2);
+    mocap_msg.pose.orientation = localOdom_msg.pose.pose.orientation;
+    mocap_msg.header.seq = 0;
+    mocap_msg.header.stamp = thisTime;
+    //mocap_msg.header.frame_id = "refnet_enu";
+    mocap_msg.header.frame_id = "fcu";
+    mocap_pub_.publish(mocap_msg);	  
+
 	lastRosTime=thisTime;
+
   }
   return;
 }
@@ -365,41 +382,15 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 		}
 	  }
 
-
-	  nav_msgs::Odometry localOdom_msg;
-	  localOdom_msg.header = msg->header;
-//      localOdom_msg.child_frame_id = msg->header.frame_id;
-	  localOdom_msg.header.frame_id = "world";
-	  localOdom_msg.child_frame_id = "world";
-	  localOdom_msg.pose.pose.position.x = state(0);
-	  localOdom_msg.pose.pose.position.y = state(1);
-	  localOdom_msg.pose.pose.position.z = state(2);
-	  localOdom_msg.twist.twist.linear.x = state(3);
-	  localOdom_msg.twist.twist.linear.y = state(4);
-	  localOdom_msg.twist.twist.linear.z = state(5);
-	  for(int i = 0; i < 3; i++)
-	  {
-		for(int j = 0; j < 3; j++)
-		{
-		  localOdom_msg.pose.covariance[6 * i + j] = proc_noise(i, j);
-		  localOdom_msg.twist.covariance[6 * i + j] = proc_noise(3 + i, 3 + j);
-		}
-	  }
-
-	  localOdom_msg.pose.pose.orientation = msg->pose.orientation;
-
 	  // Single step differentitation for angular velocity
 	  static Eigen::Matrix3d R_prev(Eigen::Matrix3d::Identity());
 	  Eigen::Matrix3d R(Eigen::Quaterniond(msg->pose.orientation.w, msg->pose.orientation.x,
 										   msg->pose.orientation.y, msg->pose.orientation.z));
+	  Eigen::Matrix3d w_hat = Eigen::Matrix3d::Zero();
 	  if(dt > 1e-6)
 	  {
 		const Eigen::Matrix3d R_dot = (R - R_prev) / dt;
-		const Eigen::Matrix3d w_hat = R_dot * R.transpose();
-
-		localOdom_msg.twist.twist.angular.x = w_hat(2, 1);
-		localOdom_msg.twist.twist.angular.y = w_hat(0, 2);
-		localOdom_msg.twist.twist.angular.z = w_hat(1, 0);
+		w_hat = R_dot * R.transpose();
 	  }
 	  R_prev = R; //R_prev is used internally in measurement proc step
 	  Rclass = R; //R_class is used with the timer
@@ -412,19 +403,48 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 	  //                    child_frame_id_);
 	  // }
 
-	  //Publish local odometry message
-	  localOdom_pub_.publish(localOdom_msg);
+	  //Publish local odometry message. Setting pubRate=0 publishes here, nonzero publishes with timer
+	  if(pubRate<1e-6)
+	  {
+	    nav_msgs::Odometry localOdom_msg;
+	    localOdom_msg.header = msg->header;
+//      localOdom_msg.child_frame_id = msg->header.frame_id;
+	    localOdom_msg.header.frame_id = "world";
+	    localOdom_msg.child_frame_id = "world";
+  	    localOdom_msg.pose.pose.position.x = state(0);
+	    localOdom_msg.pose.pose.position.y = state(1);
+ 		localOdom_msg.pose.pose.position.z = state(2);
+	 	localOdom_msg.twist.twist.linear.x = state(3);
+	  	localOdom_msg.twist.twist.linear.y = state(4);
+	  	localOdom_msg.twist.twist.linear.z = state(5);
+	  	for(int i = 0; i < 3; i++)
+	  	{
+			for(int j = 0; j < 3; j++)
+			{
+		  	localOdom_msg.pose.covariance[6 * i + j] = proc_noise(i, j);
+		  	localOdom_msg.twist.covariance[6 * i + j] = proc_noise(3 + i, 3 + j);
+			}
+	  	}
 
-	  // Publish message for px4 mocap topic
-	  geometry_msgs::PoseStamped mocap_msg;
-	  mocap_msg.pose.position.x = msg->pose.position.x;
-	  mocap_msg.pose.position.y = msg->pose.position.y;
-	  mocap_msg.pose.position.z = msg->pose.position.z;
-	  mocap_msg.pose.orientation = msg->pose.orientation;
-	  mocap_msg.header = msg->header;
-	  //mocap_msg.header.frame_id = "refnet_enu";
-	  mocap_msg.header.frame_id = "fcu";
-	  mocap_pub_.publish(mocap_msg);
+	  	localOdom_msg.pose.pose.orientation = msg->pose.orientation;
+		localOdom_msg.twist.twist.angular.x = w_hat(2, 1);
+		localOdom_msg.twist.twist.angular.y = w_hat(0, 2);
+		localOdom_msg.twist.twist.angular.z = w_hat(1, 0);	  	
+	  	localOdom_pub_.publish(localOdom_msg);
+	    
+	    // Publish message for px4 mocap topic
+	    geometry_msgs::PoseStamped mocap_msg;
+	    mocap_msg.pose.position.x = msg->pose.position.x;
+	    mocap_msg.pose.position.y = msg->pose.position.y;
+	    mocap_msg.pose.position.z = msg->pose.position.z;
+	    mocap_msg.pose.orientation = msg->pose.orientation;
+	    mocap_msg.header = msg->header;
+	    //mocap_msg.header.frame_id = "refnet_enu";
+	    mocap_msg.header.frame_id = "fcu";
+	    mocap_pub_.publish(mocap_msg);	  	
+	  }
+
+
 	}else{  //run intitialization
 		Eigen::Vector3d p0(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
 		p0=Rwrw*p0;

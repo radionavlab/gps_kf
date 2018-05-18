@@ -23,14 +23,17 @@
             <param name="maxTW" value="1.7"/>
             <param name="mass" value="0.762"/>
             <param name="run_TW" type="bool" value="false" />
+            <!--gps_kf uses a ros timer to publish odom and mocap. Set pubRate to 0 to publish when local_odom
+                is received. Otherwise, this publishes at <pubRate> Hz -->
+            <param name="pubRate" value="40.0"/>
   
             <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->
-            <param name="arenaCenterX" value="-742043.55"/> <!--ECEF-->
-            <param name="arenaCenterY" value="-5462198.63"/>
-            <param name="arenaCenterZ" value="3198003.982"/> 
-            <!--set these equal to 0, run gps_kf, monitor output, then set these parameters equal to the errors-->
-        <param name="arenaCenterX_ENU" value="2.598"/>  <!-- -0.553-->
-        <param name="arenaCenterY_ENU" value="-0.960"/>  <!-- -0.538-->
-        <param name="arenaCenterZ_ENU" value="5.600"/>   <!--5.720-->
+            <param name="arenaCenterX" value="-742015.09"/> <!--ECEF-->
+            <param name="arenaCenterY" value="-5462218.82"/>
+            <param name="arenaCenterZ" value="3198013.72"/> 
+            <!--Offsets to refine center in ENU on the fly. Should be near-zero if arenaCenter is measured well-->
+            <param name="arenaCenterX_ENU" value="-0.10"/>  <!-- -0.553-->
+            <param name="arenaCenterY_ENU" value="0.005"/>  <!-- -0.538-->
+            <param name="arenaCenterZ_ENU" value="-0.05"/>   <!--5.720-->
     </node>
 </launch>

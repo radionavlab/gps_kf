@@ -23,9 +23,9 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
         {
             validRTKtest=true;
             Eigen::Vector3d tmpvec;
-            tmpvec(0) = msg->rx - baseECEF_vector(0); //error vector from ECEF at init time
-            tmpvec(1) = msg->ry - baseECEF_vector(1);
-            tmpvec(2) = msg->rz - baseECEF_vector(2);
+            tmpvec(0) = msg->rxRov - baseECEF_vector(0); //error vector from ECEF at init time
+            tmpvec(1) = msg->ryRov - baseECEF_vector(1);
+            tmpvec(2) = msg->rzRov - baseECEF_vector(2);
             internalPose = Recef2enu*tmpvec - n_err; //rescaling
 
             //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
