@@ -6,9 +6,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf2_ros
   cmake_modules
+  nav_msgs
   gbx_ros_bridge_msgs
   px4_control
-  nav_msgs
 )
 
 find_package(Eigen REQUIRED)

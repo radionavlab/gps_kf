@@ -75,7 +75,7 @@ class gpsOdom
   ros::ServiceClient quadParamService; 
   Eigen::Matrix3d Rwrw, Rclass;
   int gpsWeek_, gpsSec_;
-  double gpsFracSec_;
+  double gpsFracSec_, dtRX_;
 };
 
 } // gps_odom

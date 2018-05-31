@@ -39,7 +39,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   twCounter=0;
 
   //Get additional parameters for the kalkman filter
-  nh.param(quadName + "/max_accel", max_accel, 2.0);
+  nh.param(quadName + "/max_accel", max_accel, 3.0);
   nh.param(quadName + "/publish_tf", publish_tf_, true);
   nh.param<std::string>(quadName + "/child_frame_id", child_frame_id_, "base_link");
   if(publish_tf_ && child_frame_id_.empty())
@@ -209,6 +209,7 @@ void gpsOdom::timerCallback(const ros::TimerEvent &event)
     odom2.time.week = gpsWeek_;
     odom2.time.secondsOfWeek = gpsSec_;
     odom2.time.fractionOfSecond = gpsFracSec_;
+    odom2.dtRX = dtRX_;
     odomTimePub_.publish(odom2);
     // Publish message for px4 mocap topic
     geometry_msgs::PoseStamped mocap_msg;
