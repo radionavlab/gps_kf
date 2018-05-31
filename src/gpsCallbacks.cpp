@@ -12,7 +12,9 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
     //if(baseECEF_vector.squaredNorm() < 0.01)
     //{
     //}
-
+    gpsWeek_=msg->tSolution.week;
+    gpsSec_=msg->tSolution.secondsOfWeek;
+    gpsFracSec_=msg->tSolution.fractionOfSecond;
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
         + msg->tSolution.week * sec_in_week -msg->deltRSec;
     if(ttime>lastRTKtime)  //only use newest time
@@ -91,7 +93,9 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;            
         }
     }*/
-
+    gpsWeek_=msg->tSolution.week;
+    gpsSec_=msg->tSolution.secondsOfWeek;
+    gpsFracSec_=msg->tSolution.fractionOfSecond;
     //if everything is working
     if(ttime>lastA2Dtime)  //Only use newest time. Ignore 0 messages.
     {

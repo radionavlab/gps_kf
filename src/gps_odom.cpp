@@ -124,6 +124,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
 							&gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());
   twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
+  odomTimePub_ = nh.advertise<gps_kf::odomWithGpsTime>("OdomWithGpsTime",10);
   joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
   quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
 
@@ -202,6 +203,13 @@ void gpsOdom::timerCallback(const ros::TimerEvent &event)
 
 	localOdom_pub_.publish(localOdom_msg);
 
+
+    gps_kf::odomWithGpsTime odom2;
+    odom2.odometry = localOdom_msg;
+    odom2.time.week = gpsWeek_;
+    odom2.time.secondsOfWeek = gpsSec_;
+    odom2.time.fractionOfSecond = gpsFracSec_;
+    odomTimePub_.publish(odom2);
     // Publish message for px4 mocap topic
     geometry_msgs::PoseStamped mocap_msg;
     mocap_msg.pose.position.x = state(0);

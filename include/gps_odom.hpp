@@ -17,6 +17,7 @@
 #include "filterTW.h"
 #include "transformations.hpp"
 #include <gps_kf/twUpdate.h>
+#include <gps_kf/odomWithGpsTime.h>
 
 namespace gps_odom
 {
@@ -50,6 +51,7 @@ class gpsOdom
   ros::Publisher mocap_pub_;
   ros::Publisher internalPosePub_; //publishes /Valkyrie/pose to itself
   ros::Publisher twPub_;
+  ros::Publisher odomTimePub_;
   std::string child_frame_id_;
   std::string quadName;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
@@ -72,7 +74,8 @@ class gpsOdom
   int twCounter;
   ros::ServiceClient quadParamService; 
   Eigen::Matrix3d Rwrw, Rclass;
-
+  int gpsWeek_, gpsSec_;
+  double gpsFracSec_;
 };
 
 } // gps_odom

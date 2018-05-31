@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   gbx_ros_bridge_msgs
   px4_control
+  nav_msgs
 )
 
 find_package(Eigen REQUIRED)
@@ -21,12 +22,15 @@ find_package(Eigen REQUIRED)
 add_message_files(
   FILES
   twUpdate.msg
+  odomWithGpsTime.msg
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  gbx_ros_bridge_msgs
+  nav_msgs
 )
 
 include_directories(
