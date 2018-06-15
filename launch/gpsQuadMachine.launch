@@ -7,7 +7,7 @@
     <arg name="machine_user"/>
     <arg name="machine_pass"/>
 
-    <machine name="linaro-luna" address="luna-snapdragon" user="$(arg machine_user)"
+    <machine name="linaro-$(arg quad_namespace)" address="$(arg quad_namespace)-snapdragon" user="$(arg machine_user)"
         password="$(arg machine_pass)" default="true" env-loader="/opt/ros/indigo/env.sh"/>
     <node 
         pkg="gps_kf" 
