@@ -95,6 +95,9 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 10);
   mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
   
+  bool useUDP = false;
+  ros::param::get(quadName + "/useUDP",useUDP);
+
   //Vicon or GPS
   if(useVicon)
   {
@@ -103,13 +106,28 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 							this, ros::TransportHints().tcpNoDelay());
   }else
   {
-	gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
+  	//Publisher
+  	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+
+  	bool useUDP = false;
+  	ros::param::get(quadName + "/useUDP",useUDP);
+  	if(useUDP)
+  	{
+		gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
+							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+		rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
+							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+		a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+	}else
+	{
+		gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
 							this, ros::TransportHints().tcpNoDelay());
-	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
-	rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
+		rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
 							this, ros::TransportHints().tcpNoDelay());
-	a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+		a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
 							this, ros::TransportHints().tcpNoDelay());
+	}
 	if(pubRate > 1e-6)
 	{
 		bool oneshot = false;
@@ -119,13 +137,25 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   }
 
   //T/W filter terms
-  thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
+  if(useUDP)
+  {
+  	thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
+							&gpsOdom::throttleCallback,this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+	attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
+							&gpsOdom::attSetCallback,this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+  	joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+  }else
+  {
+  	thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
 							&gpsOdom::throttleCallback,this, ros::TransportHints().tcpNoDelay());
-  attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
+	attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
 							&gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());
+  	joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
+  }
+  
+
   twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
   odomTimePub_ = nh.advertise<gps_kf::odomWithGpsTime>("OdomWithGpsTime",10);
-  joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
   quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
 
   L_cg2p<< 0.1013,-0.0004,0.0472;
