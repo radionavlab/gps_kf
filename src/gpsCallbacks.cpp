@@ -18,6 +18,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
     dtRX_ = msg->deltRSec;
     double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
         + msg->tSolution.week * sec_in_week -msg->deltRSec;
+    ROS_INFO("SBR:%f",ttime);
     if(ttime>lastRTKtime)  //only use newest time
     {
         hasAlreadyReceivedRTK=true;
@@ -58,6 +59,7 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             selfmsg.pose.orientation.z=internalQuat.z();
             selfmsg.pose.orientation.w=internalQuat.w(); //Quaternion(0) is w
             internalPosePub_.publish(selfmsg);
+            ROS_INFO("PUB:%f",ttime);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false; //reset to avoid publishing twice
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
         }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
@@ -99,6 +101,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
     gpsFracSec_=msg->tSolution.fractionOfSecond;
     dtRX_ = msg->deltRSec;
     //if everything is working
+    ROS_INFO("A2D:%f",ttime);
     if(ttime>lastA2Dtime)  //Only use newest time. Ignore 0 messages.
     {
         hasAlreadyReceivedA2D=true;
@@ -164,6 +167,7 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             internalPosePub_.publish(selfmsg);
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             //Reset for next message
+            ROS_INFO("PUB:%f",ttime);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
         }else if(abs(lastRTKtime-lastA2Dtime)<.001 && validRTKtest && hasAlreadyReceivedRTK
                 && hasAlreadyReceivedA2D) /*if A2D stops publishing, go for pose anyways. May change

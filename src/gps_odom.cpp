@@ -91,9 +91,9 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   ROS_INFO("gps_fps: %f", gps_fps);
 
   // Initialize publishers and subscribers
-  odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 10); //MUST have a node namespace, ns="quadName", in launchfile
-  localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 10);
-  mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 10);
+  odom_pub_ = nh.advertise<nav_msgs::Odometry>("odom", 2); //MUST have a node namespace, ns="quadName", in launchfile
+  localOdom_pub_ = nh.advertise<nav_msgs::Odometry>("local_odom", 2);
+  mocap_pub_ = nh.advertise<geometry_msgs::PoseStamped>("mavros/mocap/pose", 2);
   
   bool useUDP = false;
   ros::param::get(quadName + "/useUDP",useUDP);
@@ -107,7 +107,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   }else
   {
   	//Publisher
-  	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+  	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,2);
 
   	bool useUDP = false;
   	ros::param::get(quadName + "/useUDP",useUDP);
@@ -115,9 +115,9 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   	{
 		gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-		rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
+		rtkSub_ = nh.subscribe("SingleBaselineRTK",1,&gpsOdom::singleBaselineRTKCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-		a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+		a2dSub_ = nh.subscribe("Attitude2D",1,&gpsOdom::attitude2DCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
 	}else
 	{
