@@ -102,22 +102,22 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   if(useVicon)
   {
 	//NOTE: THE NEW VICON POSE TOPIC MUST BE ASSIGNED IN THE LAUNCH FILE VIA GLOBAL REFERENCE
-	gps_sub_ = nh.subscribe(quadPoseTopic,10,&gpsOdom::viconCallback,
+	gps_sub_ = nh.subscribe(quadPoseTopic,1,&gpsOdom::viconCallback,
 							this, ros::TransportHints().tcpNoDelay());
   }else
   {
   	//Publisher
-  	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,10);
+  	internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,11);
 
   	bool useUDP = false;
   	ros::param::get(quadName + "/useUDP",useUDP);
   	if(useUDP)
   	{
-		gps_sub_ = nh.subscribe(quadPoseTopic, 10, &gpsOdom::gpsCallback,
+		gps_sub_ = nh.subscribe(quadPoseTopic, 1, &gpsOdom::gpsCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-		rtkSub_ = nh.subscribe("SingleBaselineRTK",10,&gpsOdom::singleBaselineRTKCallback,
+		rtkSub_ = nh.subscribe("SingleBaselineRTK",1,&gpsOdom::singleBaselineRTKCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-		a2dSub_ = nh.subscribe("Attitude2D",10,&gpsOdom::attitude2DCallback,
+		a2dSub_ = nh.subscribe("Attitude2D",1,&gpsOdom::attitude2DCallback,
 							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
 	}else
 	{
