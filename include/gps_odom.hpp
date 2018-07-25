@@ -19,8 +19,10 @@
 #include <gps_kf/twUpdate.h>
 #include <gps_kf/odomWithGpsTime.h>
 #include "gbxstreamendpointin.h"
-#include "gbxstreamendpointquad.h"
 #include "gbxstream.h"
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
 
 namespace gps_odom
 {
