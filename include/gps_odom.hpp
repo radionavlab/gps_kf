@@ -18,6 +18,9 @@
 #include "transformations.hpp"
 #include <gps_kf/twUpdate.h>
 #include <gps_kf/odomWithGpsTime.h>
+#include "gbxstreamendpointin.h"
+#include "gbxstreamendpointquad.h"
+#include "gbxstream.h"
 
 namespace gps_odom
 {
@@ -27,9 +30,8 @@ class gpsOdom
   gpsOdom(ros::NodeHandle &nh);
 
   void gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
-  //void gpsCallback(const geometry_msgs::TransformStamped::ConstPtr &msg);
-  void singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg);
-  void attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg);
+  GbxStreamEndpoint::ProcessReportReturn processReport_(std::shared_ptr<const ReportMultiBaselineRtkAttitude2D>&& pReport, const u8 streamId);
+  GbxStreamEndpoint::ProcessReportReturn processReport_(std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId);
   void throttleCallback(const std_msgs::Float64::ConstPtr &msg);
   void attSetCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
   void joyCallback(const sensor_msgs::Joy::ConstPtr &msg);

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>gps_kf</name>
+  <name>gps_kf_hardwired</name>
   <version>0.0.0</version>
   <description>The gps_kf package</description>
 

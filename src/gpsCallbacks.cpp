@@ -7,28 +7,24 @@
 
 namespace gps_odom
 {
-void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselineRTK::ConstPtr &msg)
+GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
+    std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId)
 {
-    //if(baseECEF_vector.squaredNorm() < 0.01)
-    //{
-    //}
-    gpsWeek_=msg->tSolution.week;
-    gpsSec_=msg->tSolution.secondsOfWeek;
-    gpsFracSec_=msg->tSolution.fractionOfSecond;
-    dtRX_ = msg->deltRSec;
-    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond
-        + msg->tSolution.week * sec_in_week -msg->deltRSec;
+    pReport->deltRSec()
+    pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
+    double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
+
     if(ttime>lastRTKtime)  //only use newest time
     {
         hasAlreadyReceivedRTK=true;
         lastRTKtime=ttime;
-        if(msg->testStat > minTestStat)
+        if(pReport->testStat() > minTestStat)
         {
             validRTKtest=true;
             Eigen::Vector3d tmpvec;
-            tmpvec(0) = msg->rxRov - baseECEF_vector(0); //error vector from ECEF at init time
-            tmpvec(1) = msg->ryRov - baseECEF_vector(1);
-            tmpvec(2) = msg->rzRov - baseECEF_vector(2);
+            tmpvec(0) = pReport->rx() - baseECEF_vector(0); //error vector from ECEF at init time
+            tmpvec(1) = pReport->ry() - baseECEF_vector(1);
+            tmpvec(2) = pReport->rz() - baseECEF_vector(2);
             internalPose = Recef2enu*tmpvec - n_err; //rescaling
 
             //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
@@ -60,50 +56,26 @@ void gpsOdom::singleBaselineRTKCallback(const gbx_ros_bridge_msgs::SingleBaselin
             internalPosePub_.publish(selfmsg);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false; //reset to avoid publishing twice
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
-        }else{ lastRTKtime=msg->tSolution.secondsOfWeek+msg->tSolution.fractionOfSecond-msg->deltRSec +
-                        msg->tSolution.week * sec_in_week;}
+        }else{ lastRTKtime=ttime;}
     }
+    retval = ProcessReportReturn::ACCEPTED;
+    return retval;
 }
 
 
-void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr &msg)
+GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
+    std::shared_ptr<const ReportMultiBaselineRtkAttitude2D>&& pReport, const u8 streamId)
 {
-    double ttime=msg->tSolution.secondsOfWeek + msg->tSolution.fractionOfSecond + msg->tSolution.week * sec_in_week
-          - msg->deltRSec;
-    /*
-    if(ttime < 0.10)  //if A2D starts publishing blank messages, publish 0 yaw
-    {
-        hasAlreadyReceivedA2D=true;
-        if(hasAlreadyReceivedRTK && validRTKtest)
-        {
-            internalSeq++;
-            geometry_msgs::PoseStamped selfmsg;
-            selfmsg.header.seq=internalSeq;
-            selfmsg.header.stamp=ros::Time(lastRTKtime);
-            // subtraction is the apparent convention in /Valkyrie/pose
-            selfmsg.header.frame_id="fcu";
-            selfmsg.pose.position.x=internalPose(0);
-            selfmsg.pose.position.y=internalPose(1);
-            selfmsg.pose.position.z=internalPose(2);
-            selfmsg.pose.orientation.x=0;
-            selfmsg.pose.orientation.y=0;
-            selfmsg.pose.orientation.z=0;
-            selfmsg.pose.orientation.w=1;
-            internalPosePub_.publish(selfmsg);
-            //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
-            hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;            
-        }
-    }*/
-    gpsWeek_=msg->tSolution.week;
-    gpsSec_=msg->tSolution.secondsOfWeek;
-    gpsFracSec_=msg->tSolution.fractionOfSecond;
-    dtRX_ = msg->deltRSec;
+    pReport->deltRSec()
+    pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
+    double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
+
     //if everything is working
     if(ttime>lastA2Dtime)  //Only use newest time. Ignore 0 messages.
     {
         hasAlreadyReceivedA2D=true;
         lastA2Dtime=ttime;
-        if(msg->testStat > minTestStat)
+        if(pReport->testStat() > minTestStat)
         {
             double thetaWRWLim;
             validA2Dtest=true;
@@ -112,8 +84,8 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             //thetaWRWLim=0;
             //Check against order convention in px4
             internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
-                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY())
-                * Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ());
+                * Eigen::AngleAxisd(-1.0*pReport->elAngle(), Eigen::Vector3d::UnitY())
+                * Eigen::AngleAxisd(pi/2+thetaWRWLim-pReport->azAngle(), Eigen::Vector3d::UnitZ());
 //            internalQuat = Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ())
 //                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY());
 
@@ -188,8 +160,10 @@ void gpsOdom::attitude2DCallback(const gbx_ros_bridge_msgs::Attitude2D::ConstPtr
             */
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false;
         }
-
     }
+    
+    retval = ProcessReportReturn::ACCEPTED;
+    return retval;
 }
 
 
