@@ -10,7 +10,7 @@ namespace gps_odom
 GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
     std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId)
 {
-    pReport->deltRSec()
+    dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
     double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
 
@@ -66,7 +66,7 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
 GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
     std::shared_ptr<const ReportMultiBaselineRtkAttitude2D>&& pReport, const u8 streamId)
 {
-    pReport->deltRSec()
+    dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
     double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
 
