@@ -82,6 +82,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
     uint16_t port = DEFAULT_PORT;
 
 	auto epOutput = std::make_shared<GbxStreamEndpointQuad>(nh, baseECEF_vector, Recef2enu);
+	epOutput.configure(nh, baseECEF_vector, Recef2enu);
 	// Add any other necessary reports here.
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);

@@ -2,8 +2,14 @@
 #include "navtoolbox.h"
 #include <sys/time.h>
 
-GbxStreamEndpointQuad::GbxStreamEndpointQuad(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
-            Eigen::Matrix3d Recef2enu_in) 
+GbxStreamEndpointQuad::GbxStreamEndpointQuad() {}
+
+GbxStreamEndpointQuad::~GbxStreamEndpointQuad() {
+  closeSinkStream_();
+}
+
+void GbxStreamEndpointQuad::configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
+            Eigen::Matrix3d Recef2enu_in)
 {
     quadName = ros::this_node::getName();
     std::string posePubTopic;
@@ -16,10 +22,6 @@ GbxStreamEndpointQuad::GbxStreamEndpointQuad(ros::NodeHandle &nh, Eigen::Vector3
     internalSeq=0;
     sec_in_week = 604800;
     L_cg2p << 0.1013,-0.0004,0.0472;
-}
-
-GbxStreamEndpointQuad::~GbxStreamEndpointQuad() {
-  closeSinkStream_();
 }
 
 bool GbxStreamEndpointQuad::openSinkStream_() {

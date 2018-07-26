@@ -9,9 +9,10 @@
 class GbxStreamEndpointQuad : public GbxStreamEndpoint
 {
 public:
-    GbxStreamEndpointQuad(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
-            Eigen::Matrix3d Recef2enu_in);
+    GbxStreamEndpointQuad();
     virtual ~GbxStreamEndpointQuad();
+    void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
+            Eigen::Matrix3d Recef2enu_in);
 
 protected:
     virtual bool openSinkStream_() override;
