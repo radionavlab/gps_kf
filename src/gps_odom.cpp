@@ -51,22 +51,10 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 	ROS_ASSERT(gps_fps > 0.0);
 	dt = 1.0 / gps_fps;
 
-
-	auto gbxStream = std::make_shared<GbxStream>();
-	gbxStream->pauseStream();
-
-	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
-	// Add any other necessary reports here.
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
-	//make endpoint
-	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
- 	gbxStream->resumeStream();
-  	
-
 	//should be a const but catkin doesn't like scoping it
 	pi = std::atan(1.0)*4;
+
+//
 
 	/*baseECEF_vector(0) = msg->rx+msg->rxRov; //NOTE: THIS SHOULD BE READ IN VIA .LAUNCH WHEN USING GLOBAL FRAME
 	baseECEF_vector(1) = msg->ry+msg->ryRov;
@@ -84,6 +72,21 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 	RBI << 1.0, 0.0, 0.0,
 		 0.0, 1.0, 0.0,
 		 0.0, 0.0, 1.0;
+
+//
+
+	auto gbxStream = std::make_shared<GbxStream>();
+	gbxStream->pauseStream();
+
+	auto epOutput = std::make_shared<GbxStreamEndpointQuad>(nh, baseECEF_vector, Recef2enu);
+	// Add any other necessary reports here.
+	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
+	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
+	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
+	//make endpoint
+	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
+ 	gbxStream->resumeStream();
+  	
 
 	lastRTKtime=0;
 	lastA2Dtime=0;
