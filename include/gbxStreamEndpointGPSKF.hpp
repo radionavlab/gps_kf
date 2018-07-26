@@ -1,5 +1,5 @@
 #pragma once
-
+#pragma message("IS READING GBXSTREAMENDPOINTGPSKF")
 #include "gbxstreamendpoint.h"
 #include "typedefs.h"
 #include "report.h"
@@ -13,6 +13,7 @@ public:
     virtual ~GbxStreamEndpointGPSKF();
     void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in);
+    void donothing();
 
 protected:
     virtual bool openSinkStream_() override;

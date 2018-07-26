@@ -82,8 +82,9 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
         uint16_t port = DEFAULT_PORT;
 
 	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
-	epOutput->configure(nh, baseECEF_vector, Recef2enu);
-	// Add any other necessary reports here.
+	//epOutput->configure(nh, baseECEF_vector, Recef2enu);
+	epOutput->donothing();
+        // Add any other necessary reports here.
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
@@ -585,21 +586,3 @@ void gpsOdom::joyCallback(const sensor_msgs::Joy::ConstPtr &msg)
 } //end namespace
 
 
-int main(int argc, char **argv)
-{
-	ros::init(argc, argv, "gps_odom");
-	ros::NodeHandle nh;
-
-	try
-	{
-	gps_odom::gpsOdom gps_odom(nh);
-	ros::spin();
-
-	}
-	catch(const std::exception &e)
-	{
-	ROS_ERROR("%s: %s", nh.getNamespace().c_str(), e.what());
-	return 1;
-	}
-	return 0;
-}

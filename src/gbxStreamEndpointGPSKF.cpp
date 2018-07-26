@@ -24,6 +24,9 @@ void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d base
     L_cg2p << 0.1013,-0.0004,0.0472;
 }
 
+void GbxStreamEndpointGPSKF::donothing()
+{return;}
+
 bool GbxStreamEndpointGPSKF::openSinkStream_() {
   return true;
 }
