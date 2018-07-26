@@ -50,19 +50,21 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs
     DEPENDS Eigen)
 
-target_link_libraries(
+add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp)
+
+target_link_libraries(gpsKf_node 
   SharedPpEngine
   Threads::Threads
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   ${GPSTK_LIBRARIES}  )
 
-set_property(TARGET ppengineros PROPERTY CXX_STANDARD 11)
-set_property(TARGET ppengineros PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET gpsKf_node PROPERTY CXX_STANDARD 11)
+set_property(TARGET gpsKf_node PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
-add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp)
-#add_dependencies(gpsKf_node gbx_ros_bridge_msgs_gencpp)
+#add_executable(gpsKf_node src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp)
+add_dependencies(gpsKf_node gbx_ros_bridge_msgs_gencpp)
 #add_dependencies(gpsKf_node gbx_ros_bridge_msgs)
 #add_dependencies(gpsKf_node gps_kf_generate_messages_cpp)
 #target_link_libraries(gpsKf_node ${catkin_LIBRARIES})

@@ -50,18 +50,23 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 	nh.param(quadName + "/gps_fps", gps_fps, 20.0);
 	ROS_ASSERT(gps_fps > 0.0);
 	dt = 1.0 / gps_fps;
-
+        
+        const uint16_t DEFAULT_PORT = 0;
+        uint16_t port = DEFAULT_PORT;
 
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
+        //auto epOutput = std::make_shared<GbxStreamEndpointQuad>();
 	// Add any other necessary reports here.
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
-	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
-	//make endpoint
-	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
+	//epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
+        //epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
+        //epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
+        //make endpoint
+    	gbxStream->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
+        gbxStream->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
+        gbxStream->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
+        auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  	gbxStream->resumeStream();
   	
 
