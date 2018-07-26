@@ -1,46 +1,46 @@
-#include "gbxstreamendpointquad.h"
+#include "gbxstreamendpointGPSKF.h"
 #include "navtoolbox.h"
 #include <sys/time.h>
 
-GbxStreamEndpointQuad::GbxStreamEndpointQuad() {}
+GbxStreamEndpointGPSKF::GbxStreamEndpointGPSKF() {}
 
-GbxStreamEndpointQuad::~GbxStreamEndpointQuad() {
+GbxStreamEndpointGPSKF::~GbxStreamEndpointGPSKF() {
   closeSinkStream_();
 }
 
-void GbxStreamEndpointQuad::configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
+void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in)
 {
-    quadName = ros::this_node::getName();
+    GPSKFName = ros::this_node::getName();
     std::string posePubTopic;
     Recef2enu = Recef2enu_in;
     baseECEF_vector_in = baseECEF_vector;
 
-    ros::param::get(quadName + "/posePubTopic", posePubTopic);
-    ros::param::get(quadName + "/minimumTestStat",minTestStat);
+    ros::param::get(GPSKFName + "/posePubTopic", posePubTopic);
+    ros::param::get(GPSKFName + "/minimumTestStat",minTestStat);
     internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,1);
     internalSeq=0;
     sec_in_week = 604800;
     L_cg2p << 0.1013,-0.0004,0.0472;
 }
 
-bool GbxStreamEndpointQuad::openSinkStream_() {
+bool GbxStreamEndpointGPSKF::openSinkStream_() {
   return true;
 }
 
-void GbxStreamEndpointQuad::closeSinkStream_() {
+void GbxStreamEndpointGPSKF::closeSinkStream_() {
   return;
 }
 
-bool GbxStreamEndpointQuad::isValidSinkStream_() const {
+bool GbxStreamEndpointGPSKF::isValidSinkStream_() const {
   return true;
 }
 
-bool GbxStreamEndpointQuad::writeBytes_(const u8* buffer, size_t size) {
+bool GbxStreamEndpointGPSKF::writeBytes_(const u8* buffer, size_t size) {
   return true;
 }
 
-GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointQuad::processReport_(
+GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportCoda>&& pReport, const u8 streamId) {
   return ProcessReportReturn::REJECTED;
 }

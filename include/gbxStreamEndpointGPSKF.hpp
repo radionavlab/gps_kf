@@ -6,11 +6,11 @@
 #include <Eigen/Geometry>
 #include <ros/ros.h>
 
-class GbxStreamEndpointQuad : public GbxStreamEndpoint
+class GbxStreamEndpointGPSKF : public GbxStreamEndpoint
 {
 public:
-    GbxStreamEndpointQuad();
-    virtual ~GbxStreamEndpointQuad();
+    GbxStreamEndpointGPSKF();
+    virtual ~GbxStreamEndpointGPSKF();
     void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in);
 
