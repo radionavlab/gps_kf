@@ -18,7 +18,7 @@
 #include "transformations.hpp"
 #include <gps_kf/twUpdate.h>
 #include <gps_kf/odomWithGpsTime.h>
-#include "gbxstreamendpointin.h"
+#include "gbxStreamEndpointQuad.hpp"
 #include "gbxstream.h"
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;

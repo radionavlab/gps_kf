@@ -78,17 +78,17 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-    const uint16_t DEFAULT_PORT = 0;
-    uint16_t port = DEFAULT_PORT;
+        const uint16_t DEFAULT_PORT = 0;
+        uint16_t port = DEFAULT_PORT;
 
-	auto epOutput = std::make_shared<GbxStreamEndpointQuad>(nh, baseECEF_vector, Recef2enu);
-	epOutput.configure(nh, baseECEF_vector, Recef2enu);
+	auto epOutput = std::make_shared<GbxStreamEndpointQuad>();
+	epOutput->configure(nh, baseECEF_vector, Recef2enu);
 	// Add any other necessary reports here.
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
 	//make endpoint
-	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
+	//auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  	gbxStream->resumeStream();
   	
 
