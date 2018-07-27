@@ -1,10 +1,12 @@
 #pragma once
-#pragma message("IS READING GBXSTREAMENDPOINTGPSKF")
+
 #include "gbxstreamendpoint.h"
 #include "typedefs.h"
 #include "report.h"
 #include <Eigen/Geometry>
 #include <ros/ros.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 
 class GbxStreamEndpointGPSKF : public GbxStreamEndpoint
 {
@@ -13,7 +15,7 @@ public:
     virtual ~GbxStreamEndpointGPSKF();
     void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in);
-    void donothing();
+    void donothing(); //compiler test
 
 protected:
     virtual bool openSinkStream_() override;
@@ -34,8 +36,9 @@ private:
     int gpsWeek_, gpsSec_, internalSeq, sec_in_week;;
     double gpsFracSec_, dtRX_, minTestStat, lastRTKtime, lastA2Dtime;
     Eigen::Quaterniond internalQuat;
-    Eigen::Vector3d internalPose, baseECEF_vector;
+    Eigen::Vector3d internalPose, baseECEF_vector, L_cg2p;
     Eigen::Matrix3d RBI, Recef2enu;
+    ros::Publisher internalPosePub_;
 
 };
 

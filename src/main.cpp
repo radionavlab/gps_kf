@@ -1,6 +1,6 @@
-#include "gps_odom.hpp"
+//#include "gps_odom.hpp"
 
-int main(int argc, char **argv)
+/*int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "gps_odom");
 	ros::NodeHandle nh;
@@ -17,4 +17,8 @@ int main(int argc, char **argv)
 	return 1;
 	}
 	return 0;
+}*/
+int main()
+{
+        return 0;
 }

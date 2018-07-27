@@ -1,8 +1,16 @@
-#include "gbxstreamendpointGPSKF.h"
+#include "gbxStreamEndpointGPSKF.hpp"
 #include "navtoolbox.h"
 #include <sys/time.h>
 
-GbxStreamEndpointGPSKF::GbxStreamEndpointGPSKF() {}
+GbxStreamEndpointGPSKF::GbxStreamEndpointGPSKF()
+{
+    hasAlreadyReceivedA2D=false;
+    hasAlreadyReceivedRTK=false;
+    gpsSec_=0;
+    gpsWeek_=0;
+    gpsFracSec_=0;
+    L_cg2p << 0.1013, -0.0004, 0.0472;
+}
 
 GbxStreamEndpointGPSKF::~GbxStreamEndpointGPSKF() {
   closeSinkStream_();
@@ -11,6 +19,7 @@ GbxStreamEndpointGPSKF::~GbxStreamEndpointGPSKF() {
 void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in)
 {
+    std::string GPSKFName;
     GPSKFName = ros::this_node::getName();
     std::string posePubTopic;
     Recef2enu = Recef2enu_in;
@@ -49,8 +58,8 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 }
 
 
-GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
-    std::shared_ptr<const ReportMultiBaselineRtkAttitude2D>&& pReport, const u8 streamId)
+GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
+    std::shared_ptr<const ReportAttitude2D>&& pReport, const u8 streamId)
 {
     dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
@@ -65,8 +74,9 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
         {
             double thetaWRWLim;
             validA2Dtest=true;
+            double pi(atan(1.0)*4.0);
             //attitude vec is Euler=[0,0, pi/2-azAngle (+-) thetaWRW]
-            thetaWRWLim=pi/180*6.2;
+            thetaWRWLim=pi/180*6.2; //pi=atan(1)*4
             //thetaWRWLim=0;
             //Check against order convention in px4
             internalQuat = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
@@ -75,15 +85,6 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
 //            internalQuat = Eigen::AngleAxisd(pi/2+thetaWRWLim-msg->azAngle, Eigen::Vector3d::UnitZ())
 //                * Eigen::AngleAxisd(-1.0*msg->elAngle, Eigen::Vector3d::UnitY());
 
-            //Check for sign flops in quaternion
-            if(internalQuat.z()*internalQuatPrev.z()<0 && internalQuat.w()*internalQuatPrev.w()<0)
-            {
-                internalQuat.x()=-1*internalQuat.x();
-                internalQuat.y()=-1*internalQuat.y();
-                internalQuat.z()=-1*internalQuat.z();
-                internalQuat.w()=-1*internalQuat.w();
-            }
-            internalQuatPrev=internalQuat;
             RBI=internalQuat.normalized().toRotationMatrix();
 
 
@@ -131,12 +132,12 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
         }
     }
     
-    retval = ProcessReportReturn::ACCEPTED;
+    ProcessReportReturn retval = ProcessReportReturn::ACCEPTED;
     return retval;
 }
 
 
-GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
+GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId)
 {
     dtRX_=pReport->deltRSec();
@@ -154,7 +155,7 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
             tmpvec(0) = pReport->rx() - baseECEF_vector(0); //error vector from ECEF at init time
             tmpvec(1) = pReport->ry() - baseECEF_vector(1);
             tmpvec(2) = pReport->rz() - baseECEF_vector(2);
-            internalPose = Recef2enu*tmpvec - n_err; //rescaling
+            internalPose = Recef2enu*tmpvec; //rescaling
 
             //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
@@ -187,7 +188,7 @@ GbxStreamEndpoint::ProcessReportReturn gpsOdom::processReport_(
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
         }else{ lastRTKtime=ttime;}
     }
-    retval = ProcessReportReturn::ACCEPTED;
+    ProcessReportReturn retval = ProcessReportReturn::ACCEPTED;
     return retval;
 }
 

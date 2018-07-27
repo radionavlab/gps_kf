@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   nav_msgs
   gbx_ros_bridge_msgs
+  message_generation
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -49,7 +50,8 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs
     DEPENDS Eigen)
 
-add_executable(gpskf_gbx src/main.cpp src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp src/GbxStreamEndpointGPSKF.cpp)
+add_executable(gpskf_gbx src/main.cpp src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp src/gbxStreamEndpointGPSKF.cpp
+  include/filter.h include/filterTW.h include/gbxStreamEndpointGPSKF.hpp include/gpsTime.h include/gps_odom.hpp include/transformations.hpp )
 
 target_link_libraries(gpskf_gbx 
   SharedPpEngine
@@ -63,7 +65,7 @@ set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 install(FILES
-  gpsQuad.launch
+  launch/gpsQuad.launch
 #   # myfile1
 #   # myfile2
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
