@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   nav_msgs
   gbx_ros_bridge_msgs
-  px4_control
 )
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -50,17 +49,17 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs
     DEPENDS Eigen)
 
-add_executable(gpsKf_node src/main.cc src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp src/GbxStreamEndpointGPSKF.cpp)
+add_executable(gpskf_gbx src/main.cpp src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp src/GbxStreamEndpointGPSKF.cpp)
 
-target_link_libraries(gpsKf_node 
+target_link_libraries(gpskf_gbx 
   SharedPpEngine
   Threads::Threads
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   ${GPSTK_LIBRARIES}  )
 
-set_property(TARGET gpsKf_node PROPERTY CXX_STANDARD 11)
-set_property(TARGET gpsKf_node PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD 11)
+set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 install(FILES
