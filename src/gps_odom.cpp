@@ -9,7 +9,7 @@ namespace po = boost::program_options;
 
 namespace gps_odom
 {
-gpsOdom::gpsOdom(ros::NodeHandle &nh)
+gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 {
 
 	//Get data about node and topic to listen
@@ -80,12 +80,12 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-    const uint16_t DEFAULT_PORT = 0;
-    uint16_t port = DEFAULT_PORT;
+        const uint16_t DEFAULT_PORT = 0;
+        uint16_t port = DEFAULT_PORT;
 
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("gbxport", po::value<uint16_t>(&port), "GBX Input Port");
+        po::options_description desc("Allowed options");
+        desc.add_options()
+            ("gbxport", po::value<uint16_t>(&port), "GBX Input Port");
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc,argv,desc),vm);
 	po::notify(vm);

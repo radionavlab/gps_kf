@@ -1,14 +1,15 @@
-//#include "gps_odom.hpp"
+#include "gps_odom.hpp"
 
-/*int main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "gps_odom");
 	ros::NodeHandle nh;
 
 	try
 	{
-	gps_odom::gpsOdom gps_odom(nh);
-	ros::spin();
+	//gps_odom::gpsOdom gps_odom(nh);
+	gps_odom::gpsOdom gps_odom(nh,argc,argv);
+        ros::spin();
 
 	}
 	catch(const std::exception &e)
@@ -17,8 +18,8 @@
 	return 1;
 	}
 	return 0;
-}*/
-int main()
+}
+/*int main()
 {
         return 0;
-}
+}*/

@@ -19,8 +19,14 @@
 #include <gps_kf/twUpdate.h>
 #include <gps_kf/odomWithGpsTime.h>
 #include "gbxStreamEndpointGPSKF.hpp"
+#include "gbxstreamendpointin.h"
 #include "gbxstream.h"
+#include <iostream>
+#include <csignal>
+#include <iostream>
+#include <thread>
 #include <boost/program_options.hpp>
+
 namespace po = boost::program_options;
 
 namespace gps_odom
@@ -28,7 +34,7 @@ namespace gps_odom
 class gpsOdom
 {
  public:
-    gpsOdom(ros::NodeHandle &nh);
+    gpsOdom(ros::NodeHandle &nh, int argc, char **argv);
 
     void gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
     GbxStreamEndpoint::ProcessReportReturn processReport_(std::shared_ptr<const ReportMultiBaselineRtkAttitude2D>&& pReport, const u8 streamId);
