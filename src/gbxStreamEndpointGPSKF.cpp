@@ -34,7 +34,10 @@ void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d base
 }
 
 void GbxStreamEndpointGPSKF::donothing()
-{return;}
+{
+    std::cout << "Do nothing called" << std::endl;
+    return;
+}
 
 bool GbxStreamEndpointGPSKF::openSinkStream_() {
   return true;

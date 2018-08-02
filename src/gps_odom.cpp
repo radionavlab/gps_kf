@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 
+namespace po = boost::program_options;
 
 namespace gps_odom
 {
@@ -73,23 +74,37 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
 		 0.0, 1.0, 0.0,
 		 0.0, 0.0, 1.0;
 
-//
 
+	/*Read separate GBX port named  "gbxport".  This is to avoid an override for port number
+		in ROS at the --port or -p argument.*/
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-        const uint16_t DEFAULT_PORT = 0;
-        uint16_t port = DEFAULT_PORT;
+    const uint16_t DEFAULT_PORT = 0;
+    uint16_t port = DEFAULT_PORT;
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+        ("gbxport", po::value<uint16_t>(&port), "GBX Input Port");
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc,argv,desc),vm);
+	po::notify(vm);
+
+  	if(port == DEFAULT_PORT) {
+    	std::cerr << "Specify  --\'gbxport\'  as a program option." << std::endl;
+    	exit(EXIT_FAILURE);
+  	}
+
 
 	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
-	//epOutput->configure(nh, baseECEF_vector, Recef2enu);
-	epOutput->donothing();
-        // Add any other necessary reports here.
+	epOutput->configure(nh, baseECEF_vector, Recef2enu);
+	//epOutput->donothing();
+	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::CODA);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
 	epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
 	//make endpoint
-	//auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
+	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  	gbxStream->resumeStream();
   	
 
