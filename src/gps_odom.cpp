@@ -26,8 +26,6 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	ros::param::get(quadName + "/arenaCenterX_ENU", n_err(0));
 	ros::param::get(quadName + "/arenaCenterY_ENU", n_err(1));
 	ros::param::get(quadName + "/arenaCenterZ_ENU", n_err(2));
-	ros::param::get(quadName + "/rtktopic", rtktopic);
-	ros::param::get(quadName + "/a2dtopic", a2dtopic);
 	ros::param::get(quadName + "/posePubTopic", posePubTopic);
 	ros::param::get(quadName + "/minimumTestStat",minTestStat);
 	ros::param::get(quadName + "/maxTW",tmax);
@@ -35,7 +33,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	ros::param::get(quadName + "/run_TW",runTW);
 	ros::param::get(quadName + "/useViconInsteadOfGps",useVicon);
 	ros::param::get(quadName + "/pubRate",pubRate);
-	throttleMax = tmax*9.81;
+	ROS_INFO("Completed primary reads");
+        throttleMax = tmax*9.81;
         int gbxport;
         ros::param::get(quadName + "/gbxport",gbxport);
 
@@ -57,9 +56,10 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	//should be a const but catkin doesn't like scoping it
 	pi = std::atan(1.0)*4;
 
-//
-
-	/*baseECEF_vector(0) = msg->rx+msg->rxRov; //NOTE: THIS SHOULD BE READ IN VIA .LAUNCH WHEN USING GLOBAL FRAME
+        ROS_INFO("gbx listening on port %i",gbxport);
+    
+        //http://eigen.tuxfamily.org/dox-devel/group__TopicUnalignedArrayAssert.html
+        /*baseECEF_vector(0) = msg->rx+msg->rxRov; //NOTE: THIS SHOULD BE READ IN VIA .LAUNCH WHEN USING GLOBAL FRAME
 	baseECEF_vector(1) = msg->ry+msg->ryRov;
 	baseECEF_vector(2) = msg->rz+msg->rzRov;*/
 	Recef2enu=ecef2enu_rotMatrix(baseECEF_vector);
@@ -82,7 +82,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-        uint16_t port = gbxport;
+        int port = gbxport;
 /*        const uint16_t DEFAULT_PORT = 0;
         uint16_t port = DEFAULT_PORT;
 
@@ -109,7 +109,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	//make endpoint
 	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  	gbxStream->resumeStream();
-  	
+  	ROS_INFO("Pipe created");
 
 	lastRTKtime=0;
 	lastA2Dtime=0;
