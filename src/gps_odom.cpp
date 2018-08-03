@@ -34,9 +34,9 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	ros::param::get(quadName + "/useViconInsteadOfGps",useVicon);
 	ros::param::get(quadName + "/pubRate",pubRate);
 	ROS_INFO("Completed primary reads");
-        throttleMax = tmax*9.81;
-        int gbxport;
-        ros::param::get(quadName + "/gbxport",gbxport);
+    throttleMax = tmax*9.81;
+    int gbxport;
+    ros::param::get(quadName + "/gbxport",gbxport);
 
 	twCounter=0;
 
@@ -79,25 +79,24 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 
 	/*Read separate GBX port named  "gbxport".  This is to avoid an override for port number
 		in ROS at the --port or -p argument.*/
-	auto gbxStream = std::make_shared<GbxStream>();
+/*	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-        int port = gbxport;
-/*        const uint16_t DEFAULT_PORT = 0;
-        uint16_t port = DEFAULT_PORT;
+    int port = gbxport;
+    const uint16_t DEFAULT_PORT = 0;
+    uint16_t port = DEFAULT_PORT;
 
-        po::options_description desc("Allowed options");
-        desc.add_options()
-            ("gbxport", po::value<uint16_t>(&port), "GBX Input Port");
-	po::variables_map vm;
-	po::store(po::parse_command_line(argc,argv,desc),vm);
-	po::notify(vm);
+    //po::options_description desc("Allowed options");
+    //desc.add_options()
+    //    ("gbxport", po::value<uint16_t>(&port), "GBX Input Port");
+	//po::variables_map vm;
+	//po::store(po::parse_command_line(argc,argv,desc),vm);
+	//po::notify(vm);
 
   	if(port == DEFAULT_PORT) {
     	std::cerr << "Specify  --\'gbxport\'  as a program option." << std::endl;
     	exit(EXIT_FAILURE);
-  	}*/
-
+  	}
 
 	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
 	epOutput->configure(nh, baseECEF_vector, Recef2enu);
@@ -109,7 +108,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	//make endpoint
 	auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  	gbxStream->resumeStream();
-  	ROS_INFO("Pipe created");
+  	ROS_INFO("Pipe created");*/
 
 	lastRTKtime=0;
 	lastA2Dtime=0;
