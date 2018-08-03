@@ -36,6 +36,7 @@ class KalmanFilter {
 
   const State_t &getState() const { return x; }
   const ProcessCov_t &getProcessNoise() const { return P; }
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   State_t x;

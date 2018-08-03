@@ -33,7 +33,8 @@ class KalmanTW {
 
   const State_t &getState() const { return x; }
   const StateCov_t &getCovariance() const { return P; }
-
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
   State_t x;
   StateCov_t P;

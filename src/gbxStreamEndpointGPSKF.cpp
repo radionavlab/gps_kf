@@ -63,7 +63,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportAttitude2D>&& pReport, const u8 streamId)
 {
-        std::cout<<"atod" <<std::endl;
+    //std::cout<<"atod" <<std::endl;
     dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
     double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
@@ -143,7 +143,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId)
 {
-    std::cout << "sbrtk" << std::endl;
+    //std::cout << "sbrtk" << std::endl;
     dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
     double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;

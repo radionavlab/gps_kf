@@ -46,6 +46,7 @@ class gpsOdom
     Eigen::Matrix3d rotMatFromEuler(Eigen::Vector3d ee);
     Eigen::Matrix3d rotMatFromQuat(Eigen::Quaterniond qq);
     void timerCallback(const ros::TimerEvent &event);
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
     void PublishTransform(const geometry_msgs::Pose &pose,

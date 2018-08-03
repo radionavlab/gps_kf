@@ -9,7 +9,7 @@ class gpsTime {
   void setGpsTime(double tw, double ts, double tf){tWeek=tw; tSec=ts; tFracSec=ts;}
   void getGpsTime(double& twOut, double& tSecOut, double& tFracOut)
     {tWOut=tWeek; tSecOut=tSec; tFracOut=tFracSec;}
-
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
  private:
   double tWeek, tSec, tFracSec;
 };

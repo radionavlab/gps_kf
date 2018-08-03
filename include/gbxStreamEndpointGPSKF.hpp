@@ -16,6 +16,7 @@ public:
     void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in);
     void donothing(); //compiler test
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 protected:
     virtual bool openSinkStream_() override;
