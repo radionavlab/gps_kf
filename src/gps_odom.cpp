@@ -36,6 +36,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	ros::param::get(quadName + "/useViconInsteadOfGps",useVicon);
 	ros::param::get(quadName + "/pubRate",pubRate);
 	throttleMax = tmax*9.81;
+        int gbxport;
+        ros::param::get(quadName + "/gbxport",gbxport);
 
 	twCounter=0;
 
@@ -80,7 +82,8 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 	auto gbxStream = std::make_shared<GbxStream>();
 	gbxStream->pauseStream();
 
-        const uint16_t DEFAULT_PORT = 0;
+        uint16_t port = gbxport;
+/*        const uint16_t DEFAULT_PORT = 0;
         uint16_t port = DEFAULT_PORT;
 
         po::options_description desc("Allowed options");
@@ -93,7 +96,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
   	if(port == DEFAULT_PORT) {
     	std::cerr << "Specify  --\'gbxport\'  as a program option." << std::endl;
     	exit(EXIT_FAILURE);
-  	}
+  	}*/
 
 
 	auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();

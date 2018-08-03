@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(gbxkf)
+project(gbx_kf)
 
 #NOTE: Eigen includes are different in the snapdragon and odroid.  Snap uses Eigen includes, Odroid uses Eigen3 includes.
 

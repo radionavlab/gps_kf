@@ -4,13 +4,15 @@
     <arg name="child_frame_id" default="$(arg model)/base_link"/>
     <arg name="publish_tf" default="true"/>
     <arg name="gps_fps" default="20"/>
+    <arg name="gbxport" default="5555"/>
 
     <node 
-        pkg="gpskf_gbx" 
-        type="gpsKf_node" 
+        pkg="gbx_kf" 
+        type="gpskf_gbx" 
         name="gpsFilter"
         ns="$(arg quad_namespace)"
         output="screen">
+            <param name="gbxport" type="int" value="$(arg gbxport)"/>
             <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
             <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
             <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
