@@ -1,0 +1,40 @@
+<launch>
+    <arg name="quad_namespace"/>
+    <arg name="model" default="$(arg quad_namespace)"/>
+    <arg name="child_frame_id" default="$(arg model)/base_link"/>
+    <arg name="publish_tf" default="true"/>
+    <arg name="gps_fps" default="20"/>
+
+    <node 
+        pkg="gpskf_gbx" 
+        type="gpsKf_node" 
+        name="gpsFilter"
+        ns="$(arg quad_namespace)"
+        output="screen">
+            <param name="child_frame_id" type="string" value="$(arg child_frame_id)"/>
+            <param name="publish_tf" type="bool" value="$(arg publish_tf)"/>
+            <param name="gps_fps" type="int" value="$(arg gps_fps)"/>
+            <param name="quadPoseTopic" type="string" value="selfpub"/>
+            <param name="quadName" type="string" value="$(arg model)"/>
+            <param name="rtktopic" type="string" value="SingleBaselineRTK"/>
+            <param name="a2dtopic" type="string" value="Attitude2D"/>
+            <param name="posePubTopic" type="string" value="selfpub"/>
+            <param name="useViconInsteadOfGps" type="bool" value="false"/>
+            <param name="maxTW" value="1.7"/>
+            <param name="mass" value="0.762"/>
+            <param name="run_TW" type="bool" value="false" />
+            <!--gps_kf uses a ros timer to publish odom and mocap. Set pubRate to 0 to publish when local_odom
+                is received. Otherwise, this publishes at <pubRate> Hz -->
+            <param name="pubRate" value="40.0"/>
+            <param name="useUDP" type="bool" value="false"/>
+  
+            <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->
+            <param name="arenaCenterX" value="-742015.09"/> <!--ECEF-->
+            <param name="arenaCenterY" value="-5462218.82"/>
+            <param name="arenaCenterZ" value="3198013.72"/> 
+            <!--Offsets to refine center in ENU on the fly. Should be near-zero if arenaCenter is measured well-->
+            <param name="arenaCenterX_ENU" value="-0.10"/>  <!-- -0.553-->
+            <param name="arenaCenterY_ENU" value="0.005"/>  <!-- -0.538-->
+            <param name="arenaCenterZ_ENU" value="-0.05"/>   <!--5.720-->
+    </node>
+</launch>
