@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(gps_kf_hardwired)
+project(gbxkf)
 
 #NOTE: Eigen includes are different in the snapdragon and odroid.  Snap uses Eigen includes, Odroid uses Eigen3 includes.
 
@@ -14,6 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
   gbx_ros_bridge_msgs
   message_generation
 )
+
+if(NOT GBX_VERSION)
+    set(GBX_VERSION 4)
+endif()
+
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -75,7 +80,7 @@ set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 install(FILES
-  launch/gpsQuad.launch
+  launch/gpsGbx.launch
 #   # myfile1
 #   # myfile2
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
