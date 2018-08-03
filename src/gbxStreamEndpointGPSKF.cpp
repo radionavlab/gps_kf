@@ -19,9 +19,8 @@ GbxStreamEndpointGPSKF::~GbxStreamEndpointGPSKF() {
 void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
             Eigen::Matrix3d Recef2enu_in)
 {
-    std::string GPSKFName;
+    std::string GPSKFName, posePubTopic;
     GPSKFName = ros::this_node::getName();
-    std::string posePubTopic;
     Recef2enu = Recef2enu_in;
     baseECEF_vector_in = baseECEF_vector;
 
