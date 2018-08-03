@@ -31,7 +31,6 @@ int main(int argc, char **argv)
   	std::signal(SIGHUP, signalHandler);
  	std::signal(SIGQUIT, signalHandler);
 
-
 	try
 	{
 		//create gbx stream
@@ -58,18 +57,20 @@ int main(int argc, char **argv)
 		auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
  		gbxStream->resumeStream();
     
-                
-                if (!gbxStream->attachSinkEndpoint(epOutput)) {
-                    std::cerr << "Attachment failed! (output)" << std::endl;
-                    return -1;
-                }
-                
-                if (!gbxStream->attachSourceEndpoint(epInput)) {
-                    std::cerr << "Attachment failed! (input)" << std::endl;
-                    return -1;
-                }
+         
+        //Attach and throw errors if the attach fails       
+        if (!gbxStream->attachSinkEndpoint(epOutput))
+        {
+            std::cerr << "Attachment failed! (output)" << std::endl;
+            return -1;
+        }
+        if (!gbxStream->attachSourceEndpoint(epInput))
+        {
+            std::cerr << "Attachment failed! (input)" << std::endl;
+            return -1;
+        }
     
-                ROS_INFO("Pipe created");
+        ROS_INFO("Pipe created");
 
   		//create gps node
 		gps_odom::gpsOdom gps_odom(nh,argc,argv);
