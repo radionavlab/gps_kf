@@ -16,8 +16,6 @@
 #include <geometry_msgs/TransformStamped.h>
 #include "filterTW.h"
 #include "transformations.hpp"
-#include <gps_kf/twUpdate.h>
-#include <gps_kf/odomWithGpsTime.h>
 #include "gbxStreamEndpointGPSKF.hpp"
 #include "gbxstreamendpointin.h"
 #include "gbxstream.h"
@@ -54,7 +52,6 @@ class gpsOdom
                                                 const std::string &child_frame_id);
 
     gps_odom::KalmanFilter kf_;
-    gps_odom::KalmanTW kfTW_;
     KalmanFilter::State_t xCurr;
     ros::Publisher odom_pub_;
     ros::Publisher localOdom_pub_;

@@ -1,4 +1,4 @@
-#include "gps_odom.hpp"
+#include "GbxStreamEndpointGPSKF.hpp"
 
 
 //handles sigkills, borrowed from pplink-demo
@@ -52,10 +52,12 @@ int main(int argc, char **argv)
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::CODA);
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::ATTITUDE_2D);
+        epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::IMU);
+        epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::IMU_CONFIG);
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).enableWhitelist();
         //make endpoint
         auto epInput = std::make_shared<GbxStreamEndpointIN>(port, OptionObject::protocol_enum::IP_UDP, OptionObject::peer_type_enum::ROVER);
-         gbxStream->resumeStream();
+        gbxStream->resumeStream();
     
          
         //Attach and throw errors if the attach fails       
@@ -71,12 +73,6 @@ int main(int argc, char **argv)
         }
     
         ROS_INFO("Pipe created");
-
-          //create gps node
-        gps_odom::gpsOdom gps_odom(nh,argc,argv);
-        //spin enables subscribers
-        ros::spin();
-
         //Properly handle exceptions to fix the stuck pipe issue
         gbxStream->waitOnSourceDetach();
         gbxStream->detachSinkEndpoint(epOutput.get());

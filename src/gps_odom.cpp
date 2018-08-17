@@ -166,27 +166,7 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh, int argc, char **argv)
 //    timerPub_ = nh.createTimer(ros::Duration(1.0/40.0), &gpsOdom::timerCallback, this, bool oneshot = false); //correct declaration per docs
 	}
 	}
-
-	//T/W filter terms
-	if(useUDP)
-	{
-	thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
-							&gpsOdom::throttleCallback,this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-	attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
-							&gpsOdom::attSetCallback,this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-	joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
-	}else
-	{
-	thrustSub_ = nh.subscribe("mavros/setpoint_attitude/att_throttle", 10,
-							&gpsOdom::throttleCallback,this, ros::TransportHints().tcpNoDelay());
-	attSub_ = nh.subscribe("mavros/setpoint_attitude/attitude", 10,
-							&gpsOdom::attSetCallback,this, ros::TransportHints().tcpNoDelay());
-	joy_sub_ = nh.subscribe("joy",10,&gpsOdom::joyCallback, this, ros::TransportHints().tcpNoDelay()); 
-	}
 	
-
-	twPub_ = nh.advertise<gps_kf::twUpdate>("ThrustToWeight",10);
-	odomTimePub_ = nh.advertise<gps_kf::odomWithGpsTime>("OdomWithGpsTime",10);
 	quadParamService = nh.serviceClient<px4_control::updatePx4param>("px4_control_node/updateQuadParam");
 
 	L_cg2p<< 0.1013,-0.0004,0.0472;
@@ -402,55 +382,6 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 		const KalmanFilter::State_t state = kf_.getState();
 		const KalmanFilter::ProcessCov_t proc_noise = kf_.getProcessNoise();
 		xCurr = kf_.getState();
-
-		//T/W filter
-		if(state(2)>=0.10 && isArmed)
-		{
-		kfTW_.processUpdate(dt,uvec);
-		Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
-		//ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
-		//update kfTW_
-		KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
-		measM = Rwrw*measM;
-		kfTW_.measurementUpdate(measM,meas_dt);
-		Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
-		//std::cout<<xTWstate(6)<<std::endl;
-
-		twCounter++;
-		twCounter=twCounter%200;
-		twStorage(twCounter)=xTWstate(6)*throttleMax/9.81;  //throttleMax=9.81*tw[0]
-		if(twCounter==0)
-		{
-			double meanTW=twStorage.sum()/200.0;
-			double battstat;
-			battstat = 10.0+90.0/(1.75-1.40)*(meanTW-1.40); //approx battery percent
-
-			//Saturate meanTW
-			if(meanTW>1.8){meanTW=1.8;}else if(meanTW<1.3){meanTW=1.3;}
-			ROS_INFO("Updating T/W to %f. Battery at approximately %f%%",meanTW,battstat);
-				//ROS_INFO("service called");
-
-			//Call service
-			if(runTW)
-			{
-			px4_control::updatePx4param param_srv;
-			param_srv.request.data.resize(3);
-			param_srv.request.data[0]=quadMass;
-			param_srv.request.data[1]=9.81;
-			param_srv.request.data[2]=meanTW;
-			quadParamService.call(param_srv);
-			}
-	
-			//Publish TW to TW topic.  NOTE: This does not update TW on the quad. The
-			//purpose of this publisher is to produce a value that can be observed in
-			//a rosbag as rosbags do not record service calls.
-			gps_kf::twUpdate tw_msg;
-			tw_msg.rosTime = t_last_meas.toSec();
-			tw_msg.estimatedTW = meanTW;
-			twPub_.publish(tw_msg);
-			
-		}
-		}
 
 		// Single step differentitation for angular velocity
 		static Eigen::Matrix3d R_prev(Eigen::Matrix3d::Identity());

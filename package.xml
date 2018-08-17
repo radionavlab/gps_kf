@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>gbx_kf</name>
+  <name>gps_to_ros</name>
   <version>0.0.0</version>
   <description>The gps_kf package</description>
 

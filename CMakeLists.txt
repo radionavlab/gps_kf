@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(gbx_kf)
+project(gbs_to_ros)
 
 #NOTE: Eigen includes are different in the snapdragon and odroid.  Snap uses Eigen includes, Odroid uses Eigen3 includes.
 
@@ -34,7 +34,7 @@ find_package(Eigen REQUIRED)
 #    DEPENDS Eigen
 #)
 
-# # NOTE: USES GPS_KF MESSAGES SO INSTALLING THIS AS GPSKF_GBX IS FINE.
+# # NOTE: USES GPS_KF MESSAGES SO INSTALLING THIS AS gpsToRos IS FINE.
 # #   DOING SO ADDRESSES A CMAKE/PYTHON MISMATCH
 #add_message_files(
 #  FILES
@@ -62,10 +62,9 @@ catkin_package(
     INCLUDE_DIRS include
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs)
 
-add_executable(gpskf_gbx src/main.cpp src/gps_odom.cpp src/filter.cpp src/filterTW.cpp src/transformations.cpp src/gpsCallbacks.cpp src/viconCallback.cpp src/gbxStreamEndpointGPSKF.cpp
-  include/filter.h include/filterTW.h include/gbxStreamEndpointGPSKF.hpp include/gpsTime.h include/gps_odom.hpp include/transformations.hpp )
+add_executable(gpsToRos src/main.cpp src/gbxStreamEndpointGPSKF.cpp include/gbxStreamEndpointGPSKF.hpp)
 
-target_link_libraries(gpskf_gbx 
+target_link_libraries(gpsToRos 
   SharedPpEngine
   Threads::Threads
   ${catkin_LIBRARIES}
@@ -73,10 +72,10 @@ target_link_libraries(gpskf_gbx
   ${GPSTK_LIBRARIES}
   ${Eigen_LIBRARIES}
   )
-#target_link_libraries(gpskf_gbx Eigen3::Eigen)
+#target_link_libraries(gpsToRos Eigen3::Eigen)
 
-set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD 11)
-set_property(TARGET gpskf_gbx PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET gpsToRos PROPERTY CXX_STANDARD 11)
+set_property(TARGET gpsToRos PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 install(FILES

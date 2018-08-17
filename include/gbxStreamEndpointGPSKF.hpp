@@ -1,12 +1,19 @@
 #pragma once
 
 #include "gbxstreamendpoint.h"
+#include "gbxstream.h"
 #include "typedefs.h"
 #include "report.h"
 #include <Eigen/Geometry>
 #include <ros/ros.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <gbx_ros_bridge_msgs/... .h>
+#include "navtoolbox.h"
+#include <sys/time.h>
+#include <iostream>
+#include <csignal>
+#include <iostream>
+#include <thread>
+#include <boost/program_options.hpp>
 
 class GbxStreamEndpointGPSKF : public GbxStreamEndpoint
 {
