@@ -25,6 +25,7 @@ void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh)
     ip_imuC_ = nh.advertise<gbx_ros_bridge_msgs::ImuConfig>("ImuConfig",1);
     ip_sbrtk_ = nh.advertise<gbx_ros_bridge_msgs::SingleBaselineRTK>("SingleBaselineRTK",1);
     ip_a2d_ = nh.advertise<gbx_ros_bridge_msgs::Attitude2D>("Attitude2D",1);
+    ip_timer_ = nh.advertise<gps_to_ros::RostimeToGps>("RostimeToGps",1);
 }
 
 void GbxStreamEndpointGPSKF::donothing()
@@ -59,6 +60,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportAttitude2D>&& pReport, const u8 streamId)
 {
     gbx_ros_bridge_msgs::Attitude2D a2dmsg;
+    gps_to_ros::RostimeToGps timemsg;
     a2dmsg.rx = pReport->rx();
     a2dmsg.ry = pReport->ry();
     a2dmsg.rz = pReport->rz();
@@ -82,6 +84,12 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     a2dmsg.bitfield = pReport->bitfield();
 
     ip_a2d_.publish(a2dmsg);
+
+    timemsg.header.stamp=ros::Time::now();
+    timemsg.tSolution=a2dmsg.tSolution;
+    timemsg.deltRSec=a2dmsg.deltRSec;
+
+    ip_timer_.publish(timemsg);
 
     ProcessReportReturn retval = ProcessReportReturn::ACCEPTED;
     return retval;

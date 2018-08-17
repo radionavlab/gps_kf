@@ -28,27 +28,26 @@ find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(Eigen REQUIRED)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-#catkin_package(
-#    INCLUDE_DIRS include
-#    CATKIN_DEPENDS gbx_ros_bridge_msgs
-#    DEPENDS Eigen
-#)
+catkin_package(
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS gbx_ros_bridge_msgs
+    DEPENDS Eigen
+)
 
 # # NOTE: USES GPS_KF MESSAGES SO INSTALLING THIS AS gpsToRos IS FINE.
 # #   DOING SO ADDRESSES A CMAKE/PYTHON MISMATCH
-#add_message_files(
-#  FILES
-#  twUpdate.msg
-#  odomWithGpsTime.msg
-#)
+add_message_files(
+  FILES
+  RostimeToGps.msg
+)
 
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#  geometry_msgs
-#  gbx_ros_bridge_msgs
-#  nav_msgs
-#)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  gbx_ros_bridge_msgs
+  nav_msgs
+)
 
 include_directories(
   include
@@ -63,6 +62,7 @@ catkin_package(
     CATKIN_DEPENDS std_msgs geometry_msgs message_runtime gbx_ros_bridge_msgs)
 
 add_executable(gpsToRos src/main.cpp src/gbxStreamEndpointGPSKF.cpp include/gbxStreamEndpointGPSKF.hpp)
+add_dependencies(gpsToRos gps_to_ros_generate_messages_cpp)
 
 target_link_libraries(gpsToRos 
   SharedPpEngine
@@ -78,11 +78,10 @@ set_property(TARGET gpsToRos PROPERTY CXX_STANDARD 11)
 set_property(TARGET gpsToRos PROPERTY CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
-install(FILES
-  launch/gpsGbx.launch
+#install(FILES
 #   # myfile1
 #   # myfile2
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#)
 
 

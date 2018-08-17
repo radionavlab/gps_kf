@@ -10,6 +10,7 @@
 #include <gbx_ros_bridge_msgs/ImuConfig.h>
 #include <gbx_ros_bridge_msgs/SingleBaselineRTK.h>
 #include <gbx_ros_bridge_msgs/Attitude2D.h>
+#include <gps_to_ros/RostimeToGps.h>
 #include "navtoolbox.h"
 #include <sys/time.h>
 #include <iostream>
@@ -48,7 +49,7 @@ private:
     Eigen::Quaterniond internalQuat;
     Eigen::Vector3d internalPose, baseECEF_vector, L_cg2p;
     Eigen::Matrix3d RBI, Recef2enu;
-    ros::Publisher ip_imu_, ip_imuC_, ip_sbrtk_, ip_a2d_;
+    ros::Publisher ip_imu_, ip_imuC_, ip_sbrtk_, ip_a2d_, ip_timer_;
 
 };
 
