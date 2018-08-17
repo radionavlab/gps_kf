@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
         int port = gbxport;
         auto epOutput = std::make_shared<GbxStreamEndpointGPSKF>();
-        epOutput->configure(nh, baseECEF_vector, Recef2enu);
+        epOutput->configure(nh);
         //epOutput->donothing();
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::CODA);
         epOutput->filter(GbxStream::DEFAULT_PRIMARY).addReportType(Report::SINGLE_BASELINE_RTK);

@@ -6,7 +6,10 @@
 #include "report.h"
 #include <Eigen/Geometry>
 #include <ros/ros.h>
-#include <gbx_ros_bridge_msgs/... .h>
+#include <gbx_ros_bridge_msgs/Imu.h>
+#include <gbx_ros_bridge_msgs/ImuConfig.h>
+#include <gbx_ros_bridge_msgs/SingleBaselineRTK.h>
+#include <gbx_ros_bridge_msgs/Attitude2D.h>
 #include "navtoolbox.h"
 #include <sys/time.h>
 #include <iostream>
@@ -20,8 +23,7 @@ class GbxStreamEndpointGPSKF : public GbxStreamEndpoint
 public:
     GbxStreamEndpointGPSKF();
     virtual ~GbxStreamEndpointGPSKF();
-    void configure(ros::NodeHandle &nh, Eigen::Vector3d baseECEF_vector_in,
-            Eigen::Matrix3d Recef2enu_in);
+    void configure(ros::NodeHandle &nh);
     void donothing(); //compiler test
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -46,7 +48,7 @@ private:
     Eigen::Quaterniond internalQuat;
     Eigen::Vector3d internalPose, baseECEF_vector, L_cg2p;
     Eigen::Matrix3d RBI, Recef2enu;
-    ros::Publisher internalPosePub_;
+    ros::Publisher ip_imu_, ip_imuC_, ip_sbrtk_, ip_a2d_;
 
 };
 
