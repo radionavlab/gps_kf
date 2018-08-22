@@ -7,8 +7,8 @@
     <arg name="gbxport"/>
 
     <node 
-        pkg="gbx_kf" 
-        type="gpskf_gbx" 
+        pkg="gps_to_ros" 
+        type="gpsToRos" 
         name="gpsFilter"
         ns="$(arg quad_namespace)"
         output="screen">

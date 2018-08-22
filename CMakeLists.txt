@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(gbs_to_ros)
+project(gps_to_ros)
 
 #NOTE: Eigen includes are different in the snapdragon and odroid.  Snap uses Eigen includes, Odroid uses Eigen3 includes.
 
@@ -28,14 +28,6 @@ find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(Eigen REQUIRED)
 #find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-catkin_package(
-    INCLUDE_DIRS include
-    CATKIN_DEPENDS gbx_ros_bridge_msgs
-    DEPENDS Eigen
-)
-
-# # NOTE: USES GPS_KF MESSAGES SO INSTALLING THIS AS gpsToRos IS FINE.
-# #   DOING SO ADDRESSES A CMAKE/PYTHON MISMATCH
 add_message_files(
   FILES
   RostimeToGps.msg
@@ -48,6 +40,13 @@ generate_messages(
   gbx_ros_bridge_msgs
   nav_msgs
 )
+
+catkin_package(
+    INCLUDE_DIRS include
+    CATKIN_DEPENDS gbx_ros_bridge_msgs
+    DEPENDS Eigen
+)
+
 
 include_directories(
   include

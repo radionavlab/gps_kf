@@ -1,4 +1,4 @@
-#include "GbxStreamEndpointGPSKF.hpp"
+#include "gbxStreamEndpointGPSKF.hpp"
 
 
 //handles sigkills, borrowed from pplink-demo

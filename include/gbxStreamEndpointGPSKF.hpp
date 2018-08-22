@@ -19,6 +19,9 @@
 #include <thread>
 #include <boost/program_options.hpp>
 
+Eigen::Matrix3d ecef2enu_rotMatrix(Eigen::Vector3d &ECEF);
+Eigen::Vector3d ecef2enu(Eigen::Vector3d &ECEF);
+
 class GbxStreamEndpointGPSKF : public GbxStreamEndpoint
 {
 public:
