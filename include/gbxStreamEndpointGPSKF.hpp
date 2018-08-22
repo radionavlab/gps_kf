@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gbxstreamendpoint.h"
+#include "gbxstreamendpointin.h"
 #include "gbxstream.h"
 #include "typedefs.h"
 #include "report.h"
@@ -45,6 +45,10 @@ protected:
             std::shared_ptr<const ReportAttitude2D>&& pReport, const u8 streamId);
     virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
             std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId);
+    virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
+            std::shared_ptr<const ReportIMU>&& pReport, const u8 streamId);
+    virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
+            std::shared_ptr<const ReportIMUConfig>&& pReport, const u8 streamId);   
 private:
     bool validRTKtest, validA2Dtest, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK;
     int gpsWeek_, gpsSec_, internalSeq, sec_in_week;;
