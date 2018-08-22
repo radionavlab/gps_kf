@@ -46,9 +46,9 @@ protected:
     virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
             std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId);
     virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
-            std::shared_ptr<const ReportIMU>&& pReport, const u8 streamId);
+            std::shared_ptr<const ReportImu>&& pReport, const u8 streamId);
     virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
-            std::shared_ptr<const ReportIMUConfig>&& pReport, const u8 streamId);   
+            std::shared_ptr<const ReportImuConfig>&& pReport, const u8 streamId);   
 private:
     bool validRTKtest, validA2Dtest, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK;
     int gpsWeek_, gpsSec_, internalSeq, sec_in_week;;

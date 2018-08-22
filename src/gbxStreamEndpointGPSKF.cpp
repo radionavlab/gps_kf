@@ -70,8 +70,6 @@ void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh)
     
     std::string GPSKFName, posePubTopic;
     GPSKFName = ros::this_node::getName();
-    Recef2enu = Recef2enu_in;
-    baseECEF_vector_in = baseECEF_vector;
 
     ros::param::get(GPSKFName + "/posePubTopic", posePubTopic);
     ros::param::get(GPSKFName + "/minimumTestStat",minTestStat);
@@ -181,7 +179,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 
 
 GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
-    std::shared_ptr<const ReportIMU>&& pReport, const u8 streamId)
+    std::shared_ptr<const ReportImu>&& pReport, const u8 streamId)
 {
     gbx_ros_bridge_msgs::Imu imumsg;
     imumsg.tIndexTrunc = pReport->tIndexTruncated();
@@ -203,7 +201,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 }
 
 GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
-    std::shared_ptr<const ReportIMUConfig>&& pReport, const u8 streamId)
+    std::shared_ptr<const ReportImuConfig>&& pReport, const u8 streamId)
 {
     gbx_ros_bridge_msgs::ImuConfig imuCmsg;
     imuCmsg.tIndexk = pReport->tIndexk();
