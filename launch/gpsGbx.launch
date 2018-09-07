@@ -27,7 +27,7 @@
             <param name="run_TW" type="bool" value="false" />
             <!--gps_kf uses a ros timer to publish odom and mocap. Set pubRate to 0 to publish when local_odom
                 is received. Otherwise, this publishes at <pubRate> Hz -->
-            <param name="pubRate" value="40.0"/>
+            <param name="pubRate" value="20.0"/>
             <param name="useUDP" type="bool" value="false"/>
   
             <param name="minimumTestStat" value="5"/> <!--do not process measurements with worse teststat-->

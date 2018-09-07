@@ -457,13 +457,15 @@ void gpsOdom::gpsCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 		Eigen::Matrix3d R(Eigen::Quaterniond(msg->pose.orientation.w, msg->pose.orientation.x,
 											 msg->pose.orientation.y, msg->pose.orientation.z));
 		Eigen::Matrix3d w_hat = Eigen::Matrix3d::Zero();
+                Eigen::Quaterniond qTemp(R);
+                internalQuat=qTemp;
 		if(dt > 1e-6)
 		{
 		const Eigen::Matrix3d R_dot = (R - R_prev) / dt;
 		w_hat = R_dot * R.transpose();
 		}
+                Rclass=R_prev;
 		R_prev = R; //R_prev is used internally in measurement proc step
-		Rclass = R; //R_class is used with the timer
 
 		//odom_pub_.publish(localOdom_msg);
 		// //Publish tf  

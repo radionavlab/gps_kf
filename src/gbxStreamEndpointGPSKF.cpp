@@ -6,10 +6,15 @@ GbxStreamEndpointGPSKF::GbxStreamEndpointGPSKF()
 {
     hasAlreadyReceivedA2D=false;
     hasAlreadyReceivedRTK=false;
+    a2dExists_=false;
+    sbrtkExists_=false;
     gpsSec_=0;
     gpsWeek_=0;
     gpsFracSec_=0;
     L_cg2p << 0.1013, -0.0004, 0.0472;
+    arenaOffset_<<0.0,0.0,0.0;
+    lastA2Dtime=0.0;
+    lastRTKtime=0.0;
 }
 
 GbxStreamEndpointGPSKF::~GbxStreamEndpointGPSKF() {
@@ -22,10 +27,13 @@ void GbxStreamEndpointGPSKF::configure(ros::NodeHandle &nh, Eigen::Vector3d base
     std::string GPSKFName, posePubTopic;
     GPSKFName = ros::this_node::getName();
     Recef2enu = Recef2enu_in;
-    baseECEF_vector_in = baseECEF_vector;
+    baseECEF_vector = baseECEF_vector_in;
 
     ros::param::get(GPSKFName + "/posePubTopic", posePubTopic);
     ros::param::get(GPSKFName + "/minimumTestStat",minTestStat);
+    ros::param::get(GPSKFName + "/arenaCenterX_ENU",arenaOffset_(0));
+    ros::param::get(GPSKFName + "/arenaCenterY_ENU",arenaOffset_(1));
+    ros::param::get(GPSKFName + "/arenaCenterZ_ENU",arenaOffset_(2));
     internalPosePub_ = nh.advertise<geometry_msgs::PoseStamped>(posePubTopic,1);
     internalSeq=0;
     sec_in_week = 604800;
@@ -75,6 +83,10 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
         lastA2Dtime=ttime;
         if(pReport->testStat() > minTestStat)
         {
+            //not isn't working
+            if(a2dExists_){}else{ROS_INFO("A2D is publishing");}
+            a2dExists_=true;
+
             double thetaWRWLim;
             validA2Dtest=true;
             double pi(atan(1.0)*4.0);
@@ -122,6 +134,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
             selfmsg.pose.orientation.y=internalQuat.y();
             selfmsg.pose.orientation.z=internalQuat.z();
             selfmsg.pose.orientation.w=internalQuat.w();
+            //std::cout << "publishing" << std::endl;
             internalPosePub_.publish(selfmsg);
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));
             //Reset for next message
@@ -143,10 +156,10 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
 GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
     std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId)
 {
-    //std::cout << "sbrtk" << std::endl;
     dtRX_=pReport->deltRSec();
     pReport->tSolution.get(gpsWeek_, gpsSec_, gpsFracSec_);
     double ttime = gpsSec_ + gpsFracSec_ + gpsWeek_*sec_in_week - dtRX_;
+    //std::cout << "SBRTK teststat: " << pReport->testStat() << " at time: " <<ttime <<std::endl;
 
     if(ttime>lastRTKtime)  //only use newest time
     {
@@ -154,12 +167,15 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
         lastRTKtime=ttime;
         if(pReport->testStat() > minTestStat)
         {
+            if(sbrtkExists_){}else{ROS_INFO("SBRTK is publishing");}
+            sbrtkExists_=true;
+            
             validRTKtest=true;
             Eigen::Vector3d tmpvec;
-            tmpvec(0) = pReport->rx() - baseECEF_vector(0); //error vector from ECEF at init time
-            tmpvec(1) = pReport->ry() - baseECEF_vector(1);
-            tmpvec(2) = pReport->rz() - baseECEF_vector(2);
-            internalPose = Recef2enu*tmpvec; //rescaling
+            tmpvec(0) = pReport->rxRov() - baseECEF_vector(0); //error vector from ECEF at init time
+            tmpvec(1) = pReport->ryRov() - baseECEF_vector(1);
+            tmpvec(2) = pReport->rzRov() - baseECEF_vector(2);
+            internalPose = Recef2enu*tmpvec - arenaOffset_; //rescaling
 
             //std::cout<<"rI from SBRTK"<<std::endl<<internalPose<<std::endl;
             //ROS_INFO("%f %f %f %f",msg->rx, msg->rxRov, tmpvec(0), internalPose(0)); //debugging
@@ -187,6 +203,7 @@ GbxStreamEndpoint::ProcessReportReturn GbxStreamEndpointGPSKF::processReport_(
             selfmsg.pose.orientation.y=internalQuat.y();
             selfmsg.pose.orientation.z=internalQuat.z();
             selfmsg.pose.orientation.w=internalQuat.w(); //Quaternion(0) is w
+            //std::cout << "publishing" <<std::endl;
             internalPosePub_.publish(selfmsg);
             hasAlreadyReceivedRTK=false; hasAlreadyReceivedA2D=false; //reset to avoid publishing twice
             //ROS_INFO("internalpose: %f %f %f",internalPose(0),internalPose(1),internalPose(2));

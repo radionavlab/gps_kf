@@ -33,11 +33,12 @@ protected:
     virtual GbxStreamEndpoint::ProcessReportReturn processReport_(
             std::shared_ptr<const ReportSingleBaselineRtk>&& pReport, const u8 streamId);
 private:
-    bool validRTKtest, validA2Dtest, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK;
+    bool validRTKtest, validA2Dtest, hasAlreadyReceivedA2D, hasAlreadyReceivedRTK,
+        a2dExists_, sbrtkExists_;
     int gpsWeek_, gpsSec_, internalSeq, sec_in_week;;
     double gpsFracSec_, dtRX_, minTestStat, lastRTKtime, lastA2Dtime;
     Eigen::Quaterniond internalQuat;
-    Eigen::Vector3d internalPose, baseECEF_vector, L_cg2p;
+    Eigen::Vector3d internalPose, baseECEF_vector, L_cg2p, arenaOffset_;
     Eigen::Matrix3d RBI, Recef2enu;
     ros::Publisher internalPosePub_;
 
