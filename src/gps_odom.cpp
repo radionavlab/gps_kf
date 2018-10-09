@@ -102,8 +102,15 @@ gpsOdom::gpsOdom(ros::NodeHandle &nh)
   if(useVicon)
   {
 	//NOTE: THE NEW VICON POSE TOPIC MUST BE ASSIGNED IN THE LAUNCH FILE VIA GLOBAL REFERENCE
-	gps_sub_ = nh.subscribe(quadPoseTopic,1,&gpsOdom::viconCallback,
-							this, ros::TransportHints().tcpNoDelay());
+	if(useUDP)
+        {
+                gps_sub_ = nh.subscribe(quadPoseTopic,1,&gpsOdom::viconCallback,
+							this, ros::TransportHints().unreliable().reliable().tcpNoDelay());
+        }else
+        {
+                gps_sub_ = nh.subscribe(quadPoseTopic,1,&gpsOdom::viconCallback,
+                                                        this, ros::TransportHints().tcpNoDelay());
+        }
   }else
   {
   	//Publisher
