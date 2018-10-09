@@ -33,7 +33,7 @@ class gpsOdom
   void throttleCallback(const std_msgs::Float64::ConstPtr &msg);
   void attSetCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
   void joyCallback(const sensor_msgs::Joy::ConstPtr &msg);
-  void viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg);
+  void viconCallback(const geometry_msgs::PoseStamped::ConstPtr &msg);
   Eigen::Matrix3d rotMatFromEuler(Eigen::Vector3d ee);
   Eigen::Matrix3d rotMatFromQuat(Eigen::Quaterniond qq);
   void timerCallback(const ros::TimerEvent &event);

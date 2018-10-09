@@ -2,7 +2,7 @@
 
 namespace gps_odom
 {
-void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg)
+void gpsOdom::viconCallback(const geometry_msgs::PoseStamped::ConstPtr &msg)
 {
   Eigen::Vector3d zMeas;
   if(kfInit)  //only filter if initPose_ has been set
@@ -25,11 +25,11 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
 
       //extract measurement and calculate residuals to hypothesis test for kf_
       Eigen::Vector3d ECEF;
-      ECEF(0) = msg->transform.translation.x;
-      ECEF(1) = msg->transform.translation.y;
-      ECEF(2) = msg->transform.translation.z;
-      KalmanFilter::Measurement_t meas(msg->transform.translation.x, msg->transform.translation.y,
-                                             msg->transform.translation.z);
+      ECEF(0) = msg->pose.position.x;
+      ECEF(1) = msg->pose.position.y;
+      ECEF(2) = msg->pose.position.z;
+      KalmanFilter::Measurement_t meas(msg->pose.position.x, msg->pose.position.y,
+                                             msg->pose.position.z);
       Eigen::Matrix<double,6,1> xbar=kf_.getState();
       Eigen::Vector3d z_expected;  //propagating distance forwards based on estimated speed
       z_expected(0)=z_last(0)+xbar(3)*dt;
@@ -78,9 +78,9 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
       time_of_last_fix=msg->header.stamp;
 
       //update static variable AFTER using it
-      z_last(0)=msg->transform.translation.x;
-      z_last(1)=msg->transform.translation.y;
-      z_last(2)=msg->transform.translation.z;
+      z_last(0)=msg->pose.position.x;
+      z_last(1)=msg->pose.position.y;
+      z_last(2)=msg->pose.position.z;
       z_last=Rwrw*z_last;
 
       const KalmanFilter::State_t state = kf_.getState();
@@ -94,8 +94,8 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
         Eigen::Matrix<double,7,1> xStateAfterProp=kfTW_.getState();
         //ROS_INFO("T/W after propagation: %f",xStateAfterProp(6));
         //update kfTW_
-        KalmanTW::Measurement_t measM(msg->transform.translation.x, msg->transform.translation.y,
-                                             msg->transform.translation.z);
+        KalmanTW::Measurement_t measM(msg->pose.position.x, msg->pose.position.y,
+                                             msg->pose.position.z);
         measM = Rwrw*measM;
         kfTW_.measurementUpdate(measM,meas_dt);
         Eigen::Matrix<double,7,1> xTWstate=kfTW_.getState();
@@ -153,12 +153,12 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
         }
       }
 
-      localOdom_msg.pose.pose.orientation = msg->transform.rotation;
+      localOdom_msg.pose.pose.orientation = msg->pose.orientation;
 
       // Single step differentitation for angular velocity
       static Eigen::Matrix3d R_prev(Eigen::Matrix3d::Identity());
-      Eigen::Matrix3d R(Eigen::Quaterniond(msg->transform.rotation.w, msg->transform.rotation.x,
-                                           msg->transform.rotation.y, msg->transform.rotation.z));
+      Eigen::Matrix3d R(Eigen::Quaterniond(msg->pose.orientation.w, msg->pose.orientation.x,
+                                           msg->pose.orientation.y, msg->pose.orientation.z));
       if(dt > 1e-6)
       {
         const Eigen::Matrix3d R_dot = (R - R_prev) / dt;
@@ -183,16 +183,16 @@ void gpsOdom::viconCallback(const geometry_msgs::TransformStamped::ConstPtr &msg
 
       // Publish message for px4 mocap topic
       geometry_msgs::PoseStamped mocap_msg;
-      mocap_msg.pose.position.x = msg->transform.translation.x;
-      mocap_msg.pose.position.y = msg->transform.translation.y;
-      mocap_msg.pose.position.z = msg->transform.translation.z;
-      mocap_msg.pose.orientation = msg->transform.rotation;
+      mocap_msg.pose.position.x = msg->pose.position.x;
+      mocap_msg.pose.position.y = msg->pose.position.y;
+      mocap_msg.pose.position.z = msg->pose.position.z;
+      mocap_msg.pose.orientation = msg->pose.orientation;
       mocap_msg.header = msg->header;
       //mocap_msg.header.frame_id = "refnet_enu";
       mocap_msg.header.frame_id = "fcu";
       mocap_pub_.publish(mocap_msg);
     }else{  //run intitialization
-        Eigen::Vector3d p0(msg->transform.translation.x,msg->transform.translation.y,msg->transform.translation.z);
+        Eigen::Vector3d p0(msg->pose.position.x,msg->pose.position.y,msg->pose.position.z);
         p0=Rwrw*p0;
         initPose_.pose.position.x=p0(0);
         initPose_.pose.position.y=p0(1);
